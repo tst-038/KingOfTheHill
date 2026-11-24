@@ -1,4 +1,4 @@
-# MiniGamiKoth. Reload with /kotha reload; a file with problems isn't used, and the problems are listed.
+# KingOfTheHill. Reload with /kotha reload; a file with problems isn't used, and the problems are listed.
 world:
   # An existing world folder; it is loaded if it isn't already. A missing folder is a problem: nothing is generated.
   name: koth

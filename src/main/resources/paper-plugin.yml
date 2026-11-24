@@ -1,6 +1,6 @@
-name: MiniGamiKoth
+name: KingOfTheHill
 version: '${version}'
-main: io.github.tst_038.minigami.koth.plugin.KothPlugin
+main: io.github.tst_038.koth.plugin.KothPlugin
 description: King of the Hill in a world of its own, with a points shop
 authors: [tst-038]
 api-version: '26.3'
@@ -17,9 +17,9 @@ dependencies:
       required: false
       join-classpath: true
 permissions:
-  minigami.koth.admin:
+  koth.admin:
     description: Reload KOTH, start and stop it, and give and take points
     default: op
-  minigami.koth.play:
+  koth.play:
     description: Open the KOTH shop, see your points and go to the KOTH world
     default: true

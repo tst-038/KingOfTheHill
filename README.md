@@ -1,4 +1,4 @@
-# MiniGamiKoth
+# KingOfTheHill
 
 King of the Hill for [Paper](https://papermc.io), in a world of its own. On a schedule, one hill opens in the KOTH
 world. Whoever stands on it alone for a few seconds takes it and earns points for as long as they hold it. Spend the
@@ -25,18 +25,18 @@ MiniGami's stats, leaderboards and placeholders under the game `koth`.
 | | |
 |---|---|
 | Server | Paper **26.3**, Java **25** |
-| Required | MiniGami **1.6** or later, which MiniGamiKoth loads after and uses for stats, saved items and to know who is in a match |
+| Required | MiniGami **1.6** or later, which KingOfTheHill loads after and uses for stats, saved items and to know who is in a match |
 | Optional | [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/), for `%koth_...%` |
 
-1. Put `MiniGami-<version>.jar` and `MiniGamiKoth-<version>.jar` in `plugins/`.
-2. Start the server. MiniGamiKoth creates `plugins/MiniGamiKoth/` with `config.yml`, `shop.yml` and `messages/en.yml`.
+1. Put `MiniGami-<version>.jar` and `KingOfTheHill-<version>.jar` in `plugins/`.
+2. Start the server. KingOfTheHill creates `plugins/KingOfTheHill/` with `config.yml`, `shop.yml` and `messages/en.yml`.
 3. Set up the world and the hill (below), then run `/kotha reload`.
 
 Players who are in a MiniGami match can't join KOTH, shop or receive purchases; the match comes first.
 
 ## Setting it up
 
-1. Have a world folder for KOTH, for example `koth`, next to your other worlds. MiniGamiKoth loads it if it isn't
+1. Have a world folder for KOTH, for example `koth`, next to your other worlds. KingOfTheHill loads it if it isn't
    loaded already. It never generates a world: a name with no folder is reported as a problem.
 2. In `config.yml`, set `world.name`, the `spawn` where `/koth join` puts players, and the `point.region` of the hill.
 3. Run `/kotha reload`. Problems are listed in chat and in the log. A file with problems isn't used, and the previous
@@ -100,12 +100,12 @@ and given back if the rewards can't be delivered. Run `/kotha reload` after edit
 
 ## Messages
 
-Every text is in `plugins/MiniGamiKoth/messages/en.yml`, in [MiniMessage](https://docs.advntr.dev/minimessage/) format.
+Every text is in `plugins/KingOfTheHill/messages/en.yml`, in [MiniMessage](https://docs.advntr.dev/minimessage/) format.
 Keys you remove fall back to the bundled text. Use `%prefix%` for the shared prefix.
 
 ## Commands
 
-For players, with `minigami.koth.play`:
+For players, with `koth.play`:
 
 | Command | |
 |---|---|
@@ -114,7 +114,7 @@ For players, with `minigami.koth.play`:
 | `/koth balance` | Your points |
 | `/koth join` | Go to the KOTH world's spawn; not while in a MiniGami match |
 
-For staff, with `minigami.koth.admin`:
+For staff, with `koth.admin`:
 
 | Command | |
 |---|---|
@@ -132,12 +132,12 @@ The player must have been on the server before; names are looked up from the ser
 
 | Permission | Default | |
 |---|---|---|
-| `minigami.koth.play` | everyone | `/koth`, the shop, your points and going to the KOTH world |
-| `minigami.koth.admin` | op | `/kotha`: reload, start and stop, and giving and taking points |
+| `koth.play` | everyone | `/koth`, the shop, your points and going to the KOTH world |
+| `koth.admin` | op | `/kotha`: reload, start and stop, and giving and taking points |
 
 ## Placeholders
 
-With PlaceholderAPI installed, MiniGamiKoth's own:
+With PlaceholderAPI installed, KingOfTheHill's own:
 
 | Placeholder | |
 |---|---|
@@ -163,7 +163,7 @@ For example `%mg_weekly_top_koth_captures_1_name%` is who took the hill most oft
 
 ## Building
 
-MiniGamiKoth compiles against MiniGami's api. Every MiniGami release is on GitHub Packages; reading it needs a
+KingOfTheHill compiles against MiniGami's api. Every MiniGami release is on GitHub Packages; reading it needs a
 GitHub token with `read:packages`, in `~/.gradle/gradle.properties`:
 
 ```properties
@@ -174,5 +174,5 @@ GitHubPackagesPassword=<the token>
 To build against a MiniGami that isn't released yet, run `./gradlew publishToMavenLocal` in the MiniGami repo
 first; a local copy wins. The MiniGami version is set in `gradle/libs.versions.toml`.
 
-`./gradlew build` makes `build/libs/MiniGamiKoth-<version>.jar`, and `./gradlew runServer` starts a test server
+`./gradlew build` makes `build/libs/KingOfTheHill-<version>.jar`, and `./gradlew runServer` starts a test server
 with that MiniGami and PlaceholderAPI.

@@ -29,7 +29,7 @@ dependencies {
 }
 
 base {
-    archivesName = "MiniGamiKoth"
+    archivesName = "KingOfTheHill"
 }
 
 tasks.withType<JavaCompile>().configureEach {
