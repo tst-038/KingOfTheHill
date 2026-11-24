@@ -6,8 +6,18 @@ rootProject.name = "MiniGamiKoth"
 
 dependencyResolutionManagement {
     repositories {
-        // MiniGami's api, published with ./gradlew publishToMavenLocal in the MiniGami repo.
+        // MiniGami: a local build first (publishToMavenLocal in the MiniGami repo), else its releases on GitHub
+        // Packages, which needs the GitHubPackagesUsername and GitHubPackagesPassword Gradle properties (a token
+        // with read:packages).
         mavenLocal {
+            content { includeGroup("io.github.tst-038") }
+        }
+        maven("https://maven.pkg.github.com/tst-038/MiniGami") {
+            name = "GitHubPackages"
+            credentials {
+                username = providers.gradleProperty("GitHubPackagesUsername").orNull
+                password = providers.gradleProperty("GitHubPackagesPassword").orNull
+            }
             content { includeGroup("io.github.tst-038") }
         }
         mavenCentral()

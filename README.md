@@ -163,12 +163,16 @@ For example `%mg_weekly_top_koth_captures_1_name%` is who took the hill most oft
 
 ## Building
 
-MiniGamiKoth compiles against MiniGami's api, which isn't on a public repository yet. Publish it locally first:
+MiniGamiKoth compiles against MiniGami's api. Every MiniGami release is on GitHub Packages; reading it needs a
+GitHub token with `read:packages`, in `~/.gradle/gradle.properties`:
 
-```bash
-# in the MiniGami repo
-./gradlew publishToMavenLocal
+```properties
+GitHubPackagesUsername=<your GitHub name>
+GitHubPackagesPassword=<the token>
 ```
 
-Then, here, `./gradlew build` makes `build/libs/MiniGamiKoth-<version>.jar`, and `./gradlew runServer` starts a
-test server with that MiniGami and PlaceholderAPI. The MiniGami version is set in `gradle/libs.versions.toml`.
+To build against a MiniGami that isn't released yet, run `./gradlew publishToMavenLocal` in the MiniGami repo
+first; a local copy wins. The MiniGami version is set in `gradle/libs.versions.toml`.
+
+`./gradlew build` makes `build/libs/MiniGamiKoth-<version>.jar`, and `./gradlew runServer` starts a test server
+with that MiniGami and PlaceholderAPI.
