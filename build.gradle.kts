@@ -1,27 +1,44 @@
 plugins {
-    id("minigami.java-conventions")
+    `java-library`
     alias(libs.plugins.run.paper)
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+}
+
+// MiniGami's plugin jar, only to run it on the test server.
+val miniGamiPlugin by configurations.creating {
+    isTransitive = false
 }
 
 dependencies {
     // MiniGami ships api and core and shares them through join-classpath, so nothing of ours is bundled.
-    compileOnly(project(":api"))
+    compileOnly(libs.minigami.api)
     // Optional at runtime: placeholders only when PlaceholderAPI is installed.
     compileOnly(libs.placeholderapi) { isTransitive = false }
 
-    testImplementation(project(":api"))
+    testImplementation(libs.minigami.api)
     testImplementation(libs.paper.api)
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
     testRuntimeOnly(libs.sqlite.jdbc)
+
+    miniGamiPlugin(libs.minigami.plugin)
 }
 
 base {
     archivesName = "MiniGamiKoth"
 }
 
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "UTF-8"
+    options.compilerArgs.add("-Xlint:all")
+}
+
 tasks.test {
+    useJUnitPlatform()
     // The SQLite driver loads its native library.
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
@@ -34,6 +51,6 @@ tasks.processResources {
 
 tasks.runServer {
     minecraftVersion("26.3")
-    pluginJars(project(":paper").tasks.named<Jar>("jar").flatMap { it.archiveFile })
+    pluginJars(miniGamiPlugin)
     downloadPlugins { modrinth("placeholderapi", libs.versions.placeholderapi.get()) }
 }

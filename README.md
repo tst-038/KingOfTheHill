@@ -4,7 +4,7 @@ King of the Hill for [Paper](https://papermc.io), in a world of its own. On a sc
 world. Whoever stands on it alone for a few seconds takes it and earns points for as long as they hold it. Spend the
 points in a shop (`/koth shop`) on items, saved items such as crate keys, or console commands such as a permission.
 
-It is a plugin of its own that builds on [MiniGami](../README.md): kills, deaths, captures and points show up in
+It is a plugin of its own that builds on [MiniGami](https://github.com/tst-038/MiniGami): kills, deaths, captures and points show up in
 MiniGami's stats, leaderboards and placeholders under the game `koth`.
 
 ## Contents
@@ -18,13 +18,14 @@ MiniGami's stats, leaderboards and placeholders under the game `koth`.
 - [Commands](#commands)
 - [Permissions](#permissions)
 - [Placeholders](#placeholders)
+- [Building](#building)
 
 ## Requirements and installation
 
 | | |
 |---|---|
 | Server | Paper **26.3**, Java **25** |
-| Required | MiniGami, which MiniGamiKoth loads after and uses for stats, saved items and to know who is in a match |
+| Required | MiniGami **1.6** or later, which MiniGamiKoth loads after and uses for stats, saved items and to know who is in a match |
 | Optional | [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/), for `%koth_...%` |
 
 1. Put `MiniGami-<version>.jar` and `MiniGamiKoth-<version>.jar` in `plugins/`.
@@ -159,3 +160,15 @@ in MiniGami, so use its placeholders with the game `koth`:
 | `%mg_monthly_top_koth_<stat>_<place>_name%` / `…_value%` | A place on the leaderboard of this month |
 
 For example `%mg_weekly_top_koth_captures_1_name%` is who took the hill most often this week.
+
+## Building
+
+MiniGamiKoth compiles against MiniGami's api, which isn't on a public repository yet. Publish it locally first:
+
+```bash
+# in the MiniGami repo
+./gradlew publishToMavenLocal
+```
+
+Then, here, `./gradlew build` makes `build/libs/MiniGamiKoth-<version>.jar`, and `./gradlew runServer` starts a
+test server with that MiniGami and PlaceholderAPI. The MiniGami version is set in `gradle/libs.versions.toml`.
