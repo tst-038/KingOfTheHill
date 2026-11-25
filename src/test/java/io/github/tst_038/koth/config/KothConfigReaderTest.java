@@ -222,6 +222,14 @@ class KothConfigReaderTest {
     }
 
     @Test
+    void theJoinLinkLastsTwelveHoursUnlessTheConfigSaysOtherwise() throws Exception {
+        assertEquals(Duration.ofMinutes(90), read(bundledWith("join-link-minutes: 720", "join-link-minutes: 90")).joinLinkLifetime());
+        assertEquals(Duration.ofHours(12), read(bundledWith("  join-link-minutes: 720\n", "")).joinLinkLifetime());
+        assertEquals(List.of("config.yml: announce.join-link-minutes: must be between 1 and 10080"),
+                problems(bundledWith("join-link-minutes: 720", "join-link-minutes: 0")));
+    }
+
+    @Test
     void anUnknownKeyIsAProblem() {
         assertEquals(List.of("config.yml: pointt: unknown key"), problems(Yaml.bundledConfig() + "pointt: 1\n"));
     }

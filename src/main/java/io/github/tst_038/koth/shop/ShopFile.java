@@ -1,6 +1,6 @@
 package io.github.tst_038.koth.shop;
 
-import io.github.tst_038.koth.config.FileEdits.Refusal;
+import io.github.tst_038.minigami.api.config.FileEditor.Refusal;
 import io.github.tst_038.minigami.api.menu.Place;
 import java.util.List;
 import java.util.Map;

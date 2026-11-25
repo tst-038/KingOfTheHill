@@ -1,8 +1,8 @@
 package io.github.tst_038.koth.shop;
 
 import io.github.tst_038.koth.text.Numbers;
-import io.github.tst_038.koth.config.FileEdits;
 import io.github.tst_038.koth.config.KothFiles;
+import io.github.tst_038.minigami.api.config.FileEditor;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.menu.PageLayout;
 import io.github.tst_038.minigami.api.menu.Place;
@@ -32,14 +32,14 @@ import org.bukkit.inventory.ItemStack;
  */
 public final class ShopEditor {
 
-    private final FileEdits edits;
+    private final FileEditor edits;
     private final Messages messages;
     private final MiniGamiSavedItems savedItems;
     private final Supplier<Shop> shop;
     private final Executor serverThread;
     private final Logger logger;
 
-    public ShopEditor(FileEdits edits, Messages messages, MiniGamiSavedItems savedItems, Supplier<Shop> shop, Executor serverThread, Logger logger) {
+    public ShopEditor(FileEditor edits, Messages messages, MiniGamiSavedItems savedItems, Supplier<Shop> shop, Executor serverThread, Logger logger) {
         this.edits = edits;
         this.messages = messages;
         this.savedItems = savedItems;

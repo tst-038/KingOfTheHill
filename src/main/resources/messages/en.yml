@@ -125,10 +125,34 @@ setup:
   box-showing: "%prefix%<gray>Showing %box% for %seconds% seconds."
   spawn-set: "%prefix%<green>Saved the spawn where you stand in config.yml."
   leave-set: "%prefix%<green>Saved where you stand as where players are sent out to, in config.yml."
-# Changing a file by command. %file%
+# Changing a file by command: /kotha config, /kotha shop config, /kotha messages and the setup and shop commands. %file%
 edit:
-  not-saved: "%prefix%<red>%file% was left as it was; it would have these problems:"
-  failed: "%prefix%<red>Could not write %file%; see the log."
+  invalid: "%prefix%<red>Not saved: <white>%file%</white> would have these problems:"
+  # %problem%
+  problem: "<red> - %problem%"
+  save-failed: "%prefix%<red>Could not save <white>%file%</white>; see the log."
+  here-needs-player: "%prefix%<red>Only a player can use <white>here</white> as a value."
+  # %value%: what was typed
+  bad-value: "%prefix%<red><white>%value%</white> isn't a value; put text in quotes, e.g. <white>\"%value%\"</white>."
+  # %key%
+  set: "%prefix%<green>Set <white>%key%</white> in <white>%file%</white>."
+  unset: "%prefix%<green>Took <white>%key%</white> out of <white>%file%</white>; its default applies again."
+  # /kotha messages: %key% is the message's key, such as join.done or prefix
+  message-unknown: "%prefix%<red>There is no message <white>%key%</white>."
+  message-set: "%prefix%<green>Changed message <white>%key%</white> in <white>%file%</white>."
+  message-unset: "%prefix%<green>Message <white>%key%</white> is back to the default."
+  message-default: "%prefix%<gray>Message <white>%key%</white> already is the default."
+  # %text%: the message as written; <set>...</set> puts the command to change it in the chat
+  message-text: "<set><hover:show_text:'Click to change'><gold>%key%</gold><gray>: <white>%text%</white></hover></set>"
+  # %preview%: the message as players see it, its placeholders left unfilled
+  message-preview: "<gray> Shown as: </gray>%preview%"
+# /kotha config info and /kotha shop config info: the file, then a line per value. <set>...</set> puts the command to change it in the chat
+info:
+  config: "%prefix%<gold>%file%</gold><gray>:"
+  # %key%, %value%
+  value: "<set><hover:show_text:'Click to change'><gray> - <white>%key%</white>: <yellow>%value%</yellow></hover></set>"
+  # A value the file leaves out, so its default applies
+  value-inherited: "<set><hover:show_text:'Click to change'><dark_gray> - %key%: %value%</hover></set>"
 # /kotha shop. %id%: the entry, %saved%: the name its item is saved under in MiniGami
 shop-edit:
   bad-id: "%prefix%<red>An id is lower-case letters, digits, _ and -."

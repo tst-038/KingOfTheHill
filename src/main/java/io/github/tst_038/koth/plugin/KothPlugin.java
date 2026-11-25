@@ -3,7 +3,10 @@ package io.github.tst_038.koth.plugin;
 import io.github.tst_038.minigami.api.ban.MiniGamiBans;
 import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
+import io.github.tst_038.minigami.api.config.EditableFile;
+import io.github.tst_038.minigami.api.config.FileEditor;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
+import io.github.tst_038.minigami.api.message.MessageEditor;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.reward.RewardReader;
@@ -13,7 +16,6 @@ import io.github.tst_038.minigami.core.storage.Migrations;
 import io.github.tst_038.minigami.core.storage.SqliteStorage;
 import io.github.tst_038.minigami.core.storage.Storage;
 import io.github.tst_038.koth.command.KothCommands;
-import io.github.tst_038.koth.config.FileEdits;
 import io.github.tst_038.koth.config.KothConfigLoader;
 import io.github.tst_038.koth.config.KothFiles;
 import io.github.tst_038.koth.ledger.Balances;
@@ -69,6 +71,9 @@ public final class KothPlugin extends JavaPlugin {
     private RewardReader rewards;
     private MiniGamiSavedItems savedItems;
     private ShopMenus shopMenus;
+    /** config.yml and shop.yml as {@code /kotha config} and {@code /kotha shop config} edit them; each load hands them its keys. */
+    private EditableFile configFile;
+    private EditableFile shopFile;
     /** Takes our PlaceholderAPI expansion away; does nothing when PlaceholderAPI isn't there. */
     private Runnable unregisterPlaceholders = () -> { };
     private volatile Shop shop = Shop.NONE;
@@ -123,12 +128,15 @@ public final class KothPlugin extends JavaPlugin {
         }, 20, 20);
         Consumer<Audience> reload = requester -> loadConfig(files, messages, requester);
         Executor fileIo = task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run());
-        var edits = new FileEdits(getDataPath(), messages, fileIo, serverThread, reload, getLogger());
+        var edits = new FileEditor(getDataPath(), messages, fileIo, serverThread, reload, getLogger());
+        configFile = new EditableFile(edits, KothFiles.CONFIG, file -> KothConfigLoader.load(file, new KothWorld(getServer())).problems());
+        shopFile = new EditableFile(edits, KothFiles.SHOP, file -> ShopReader.load(file, rewards, savedItems).problems());
         var shopEditor = new ShopEditor(edits, messages, savedItems, this::shop, serverThread, getLogger());
         var checkout = new Checkout(getServer(), messages, wallet, players, serverThread, getLogger());
         shopMenus = new ShopMenus(getServer(), this::shop, messages, savedItems, wallet, players, checkout, shopEditor, KothCommands.ADMIN, getLogger());
         var commands = new KothCommands(getServer(), messages, runtime, joining, wallet, this::shop, reload,
-                new KothSetup(setup, edits, messages, runtime::config), sendOut, shopEditor, shopMenus, clock, serverThread, getLogger());
+                new KothSetup(setup, edits, messages, runtime::config), sendOut, shopEditor, shopMenus,
+                configFile, shopFile, new MessageEditor(edits, messages, KothFiles.MESSAGES, files.bundledMessages()), clock, serverThread, getLogger());
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(commands.playerRoot(), "King of the Hill: status, shop, points and going there");
             event.registrar().register(commands.adminRoot(), "Manage King of the Hill");
@@ -165,9 +173,11 @@ public final class KothPlugin extends JavaPlugin {
                 var loaded = KothConfigLoader.load(configText, new KothWorld(getServer()));
                 problems.addAll(loaded.problems());
                 loaded.config().ifPresent(config -> runtime.configure(config, dismissed));
+                configFile.loaded(loaded.file(), loaded.keys(), loaded.problems());
                 var loadedShop = ShopReader.load(shopText, rewards, savedItems);
                 problems.addAll(loadedShop.problems());
                 loadedShop.shop().ifPresent(read -> shop = read);
+                shopFile.loaded(loadedShop.file(), loadedShop.keys(), loadedShop.problems());
                 shopMenus.refreshOpen();
                 problems.forEach(problem -> getLogger().warning(problem.toString()));
                 if (loaded.config().isEmpty()) {

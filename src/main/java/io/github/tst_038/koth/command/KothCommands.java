@@ -9,9 +9,12 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.github.tst_038.minigami.api.command.EditCommands;
 import io.github.tst_038.minigami.api.command.PlayerTargets;
+import io.github.tst_038.minigami.api.config.EditableFile;
 import io.github.tst_038.minigami.api.menu.PageLayout;
 import io.github.tst_038.minigami.api.menu.Place;
+import io.github.tst_038.minigami.api.message.MessageEditor;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.koth.ledger.Wallet;
 import io.github.tst_038.koth.message.StatusResolver;
@@ -46,9 +49,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /**
- * {@code /koth [shop|balance|join|leave]} for players, and {@code /kotha reload|start [minutes]|stop|status|kick <players>|points give|take|show <player> [amount]}
- * and {@code /kotha setup point|colours set|select|show}, {@code /kotha setup spawn|leave} and
- * {@code /kotha shop [add|command|cost|slot|remove|list]} for staff, the shop editor without a subcommand. Server thread only.
+ * {@code /koth [shop|balance|join|leave]} for players, and {@code /kotha reload|start [minutes]|stop|status|kick <players>|points give|take|show <player> [amount]},
+ * {@code /kotha setup point|colours set|select|show}, {@code /kotha setup spawn|leave},
+ * {@code /kotha shop [add|command|cost|slot|remove|list]} (the shop editor without a subcommand), {@code /kotha config info|set|unset},
+ * {@code /kotha shop config info|set|unset} and {@code /kotha messages set|unset|info} for staff. Server thread only.
  */
 public final class KothCommands {
 
@@ -75,12 +79,16 @@ public final class KothCommands {
     private final SendOut sendOut;
     private final ShopEditor shopEditor;
     private final ShopMenus shopMenus;
+    private final EditableFile configFile;
+    private final EditableFile shopFile;
+    private final MessageEditor messageEditor;
     private final Clock clock;
     private final Executor serverThread;
     private final Logger logger;
 
     public KothCommands(Server server, Messages messages, KothRuntime runtime, Joining joining, Wallet wallet, Supplier<Shop> shop,
-            Consumer<Audience> reload, KothSetup setup, SendOut sendOut, ShopEditor shopEditor, ShopMenus shopMenus, Clock clock, Executor serverThread, Logger logger) {
+            Consumer<Audience> reload, KothSetup setup, SendOut sendOut, ShopEditor shopEditor, ShopMenus shopMenus,
+            EditableFile configFile, EditableFile shopFile, MessageEditor messageEditor, Clock clock, Executor serverThread, Logger logger) {
         this.server = server;
         this.messages = messages;
         this.runtime = runtime;
@@ -92,6 +100,9 @@ public final class KothCommands {
         this.sendOut = sendOut;
         this.shopEditor = shopEditor;
         this.shopMenus = shopMenus;
+        this.configFile = configFile;
+        this.shopFile = shopFile;
+        this.messageEditor = messageEditor;
         this.clock = clock;
         this.serverThread = serverThread;
         this.logger = logger;
@@ -168,7 +179,10 @@ public final class KothCommands {
                             shopEditor.remove(context.getSource().getSender(), idOf(context));
                             return Command.SINGLE_SUCCESS;
                         })))
-                        .then(Commands.literal("list").executes(bySender(shopEditor::list))))
+                        .then(Commands.literal("list").executes(bySender(shopEditor::list)))
+                        .then(EditCommands.config("config", shopFile, "/kotha shop config set ")))
+                .then(EditCommands.config("config", configFile, "/kotha config set "))
+                .then(EditCommands.messages("messages", messageEditor, "/kotha messages set "))
                 .build();
     }
 

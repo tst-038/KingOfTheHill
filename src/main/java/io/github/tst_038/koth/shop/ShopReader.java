@@ -3,6 +3,7 @@ package io.github.tst_038.koth.shop;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
+import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.item.ItemLook;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.menu.PageLayout;
@@ -11,10 +12,13 @@ import io.github.tst_038.minigami.api.reward.Reward;
 import io.github.tst_038.minigami.api.reward.RewardReader;
 import io.github.tst_038.koth.config.KothFiles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.SortedMap;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -27,8 +31,12 @@ public final class ShopReader {
     private ShopReader() {
     }
 
-    /** @param shop the shop, if the file is usable; the problems are there either way */
-    public record Loaded(Optional<Shop> shop, List<ConfigProblem> problems) {
+    /**
+     * @param shop the shop, if the file is usable; the problems are there either way
+     * @param file the file as read, empty if it isn't YAML
+     * @param keys the keys it has and the reader asked for, to complete in {@code /kotha shop config}
+     */
+    public record Loaded(Optional<Shop> shop, List<ConfigProblem> problems, ConfigurationSection file, SortedMap<String, List<String>> keys) {
     }
 
     /** Turns the text of {@code shop.yml} into a {@link Shop}, or into the problems that stop it. */
@@ -37,15 +45,21 @@ public final class ShopReader {
         try {
             section.loadFromString(yaml);
         } catch (InvalidConfigurationException e) {
-            return new Loaded(Optional.empty(), List.of(new ConfigProblem(KothFiles.SHOP, "", "can't be read: " + e.getMessage())));
+            return new Loaded(Optional.empty(), List.of(new ConfigProblem(KothFiles.SHOP, "", "can't be read: " + e.getMessage())), new YamlConfiguration(),
+                    Collections.emptySortedMap());
         }
+        return load(section, rewards, savedItems);
+    }
+
+    /** The file already read. */
+    public static Loaded load(ConfigurationSection section, RewardReader rewards, MiniGamiSavedItems savedItems) {
         var root = ConfigReader.of(KothFiles.SHOP, section);
         var shop = read(root, rewards, savedItems);
         try {
             root.check();
-            return new Loaded(Optional.of(shop), List.of());
+            return new Loaded(Optional.of(shop), List.of(), section, YamlFiles.keys(section, root));
         } catch (InvalidConfigException e) {
-            return new Loaded(Optional.empty(), e.problems());
+            return new Loaded(Optional.empty(), e.problems(), section, YamlFiles.keys(section, root));
         }
     }
 

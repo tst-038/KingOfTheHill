@@ -8,6 +8,7 @@ import io.github.tst_038.minigami.core.time.Durations;
 import io.github.tst_038.koth.text.Moments;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.function.Supplier;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.event.ClickCallback;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -24,17 +25,17 @@ import org.bukkit.entity.Player;
  */
 final class Announcer {
 
-    /** How long a link in chat keeps working; by then the window it announced is over or long since joined. */
-    private static final Duration JOIN_LINK_LIFETIME = Duration.ofHours(12);
-
     private final Server server;
     private final Messages messages;
     private final Joining joining;
+    private final Supplier<Duration> joinLinkLifetime;
 
-    Announcer(Server server, Messages messages, Joining joining) {
+    /** @param joinLinkLifetime how long a link in chat keeps working, from the config in use */
+    Announcer(Server server, Messages messages, Joining joining, Supplier<Duration> joinLinkLifetime) {
         this.server = server;
         this.messages = messages;
         this.joining = joining;
+        this.joinLinkLifetime = joinLinkLifetime;
     }
 
     /** Who hears that KOTH starts and ends: players who may play it, and the console for the log. */
@@ -50,7 +51,7 @@ final class Announcer {
                         joining.joinFromLink(player);
                     }
                 },
-                ClickCallback.Options.builder().uses(ClickCallback.UNLIMITED_USES).lifetime(JOIN_LINK_LIFETIME).build()));
+                ClickCallback.Options.builder().uses(ClickCallback.UNLIMITED_USES).lifetime(joinLinkLifetime.get()).build()));
     }
 
     void warning(Duration before, LocalDateTime start) {

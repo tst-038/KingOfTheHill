@@ -29,6 +29,15 @@ class KothConfigLoaderTest {
     }
 
     @Test
+    void theKeysToCompleteAreTheFilesAndTheOnesItLeavesOut() {
+        var leftOut = KothConfigLoader.load(Yaml.bundledConfig().replace("  join-link-minutes: 720\n", ""), worlds).keys();
+        var all = KothConfigLoader.load(Yaml.bundledConfig(), worlds).keys();
+
+        assertTrue(leftOut.containsKey("announce.join-link-minutes"));
+        assertEquals(List.of("true", "false"), all.get("world.respawn-here"));
+    }
+
+    @Test
     void aFileWithProblemsLoadsNoConfigAndListsThem() {
         var loaded = KothConfigLoader.load(Yaml.bundledConfig() + "pointt: 1\n", worlds);
 

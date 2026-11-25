@@ -49,6 +49,11 @@ scoring:
   points: 1
   every-seconds: 1
 
+announce:
+  # How long the [Go there] link in a start announcement keeps working, in minutes (at most 10080, a week); a click
+  # after that does nothing. Left out: 720, twelve hours.
+  join-link-minutes: 720
+
 restrictions:
   # A window waits, with an announcement, while fewer players than this are online. KOTH starts as soon as there are
   # enough, and runs until the window's end; a window that ends before that is skipped.

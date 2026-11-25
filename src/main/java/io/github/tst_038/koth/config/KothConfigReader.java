@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.koth.hill.Scoring;
 import io.github.tst_038.koth.schedule.Plan;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,6 +26,9 @@ public final class KothConfigReader {
     static final int MAX_COLOUR_BLOCKS = 1_048_576;
     private static final int MAX_SECONDS = 3600;
     private static final int MAX_SIDEBAR_LINES = 15;
+    private static final int DEFAULT_JOIN_LINK_MINUTES = 720;
+    /** As long as the longest window, so a link works for all of it. */
+    private static final int MAX_JOIN_LINK_MINUTES = 10_080;
 
     private KothConfigReader() {
     }
@@ -64,9 +68,13 @@ public final class KothConfigReader {
         checkLineCount(sidebar, "waiting", lines.waiting());
         checkLineCount(sidebar, "active", lines.active());
 
+        var announce = root.sectionOrEmpty("announce");
+        var joinLink = Duration.ofMinutes(announce.has("join-link-minutes")
+                ? announce.integer("join-link-minutes", 1, MAX_JOIN_LINK_MINUTES) : DEFAULT_JOIN_LINK_MINUTES);
+
         root.check();
         // check() passed, so nothing above went wrong and the timetable is there.
-        return new KothConfig(world, spawn, respawnHere, leave, new Plan(timetable.orElseThrow(), warnings, restrictions), point, scoring, lines);
+        return new KothConfig(world, spawn, respawnHere, leave, new Plan(timetable.orElseThrow(), warnings, restrictions), point, scoring, lines, joinLink);
     }
 
     private static void checkLineCount(ConfigReader sidebar, String key, List<String> texts) {

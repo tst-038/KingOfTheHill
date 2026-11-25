@@ -53,7 +53,7 @@ public final class KothRuntime {
     public KothRuntime(Server server, Messages messages, Wallet wallet, MiniGamiStats miniGamiStats, Joining joining, StatBuffer buffer,
             Clock clock, RandomGenerator random, Consumer<LocalDateTime> onDismissed, Logger logger) {
         this.server = server;
-        this.announcer = new Announcer(server, messages, joining);
+        this.announcer = new Announcer(server, messages, joining, () -> config.joinLinkLifetime());
         this.wallet = wallet;
         this.miniGamiStats = miniGamiStats;
         this.joining = joining;

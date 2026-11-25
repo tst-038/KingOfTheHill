@@ -1,10 +1,10 @@
 package io.github.tst_038.koth.setup;
 
 import io.github.tst_038.minigami.api.config.ConfigLocations;
+import io.github.tst_038.minigami.api.config.FileEditor;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.setup.MiniGamiSetup;
-import io.github.tst_038.koth.config.FileEdits;
 import io.github.tst_038.koth.config.KothConfig;
 import io.github.tst_038.koth.config.KothConfigLoader;
 import io.github.tst_038.koth.config.KothFiles;
@@ -39,12 +39,12 @@ public final class KothSetup {
     }
 
     private final MiniGamiSetup setup;
-    private final FileEdits edits;
+    private final FileEditor edits;
     private final Messages messages;
     private final Supplier<Optional<KothConfig>> config;
 
     /** @param config the config in use, if any */
-    public KothSetup(MiniGamiSetup setup, FileEdits edits, Messages messages, Supplier<Optional<KothConfig>> config) {
+    public KothSetup(MiniGamiSetup setup, FileEditor edits, Messages messages, Supplier<Optional<KothConfig>> config) {
         this.setup = setup;
         this.edits = edits;
         this.messages = messages;
@@ -133,7 +133,7 @@ public final class KothSetup {
     static void requireWorld(ConfigurationSection file, String playerWorld) {
         var kothWorld = file.getString("world.name", "");
         if (!kothWorld.equals(playerWorld)) {
-            throw new FileEdits.Refusal("setup.wrong-world", Placeholder.unparsed("world", kothWorld));
+            throw new FileEditor.Refusal("setup.wrong-world", Placeholder.unparsed("world", kothWorld));
         }
     }
 

@@ -25,7 +25,7 @@ MiniGami's stats, leaderboards and placeholders under the game `koth`.
 | | |
 |---|---|
 | Server | Paper **26.3**, Java **25** |
-| Required | MiniGami **1.6** or later, which KingOfTheHill loads after and uses for stats, saved items, bans and to know who is in a match |
+| Required | MiniGami **1.7** or later, which KingOfTheHill loads after and uses for stats, saved items, bans and to know who is in a match |
 | Optional | [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/), for `%koth_...%` |
 | Optional | [WorldEdit](https://enginehub.org/worldedit) or [FastAsyncWorldEdit](https://www.spigotmc.org/resources/fastasyncworldedit.13932/), to set the hill and the colour box by command |
 
@@ -62,11 +62,20 @@ banned and whenever they come in by any route, and doesn't count on the hill. `/
 | `schedule` | When it runs, as `cron` or `cycle` (see below), and `warn-minutes`: chat warnings that long before a start |
 | `point` | The hill's `region`, `capture-seconds` to take it, `colour-blocks`, a box whose dyed blocks change colour on each capture (left out: the hill and the layer under it), and `neutral-colour` for while nobody holds the hill and KOTH isn't running |
 | `scoring` | `points` for the holder every `every-seconds`, wherever they are in the world |
+| `announce` | `join-link-minutes`: how long the `[Go there]` link in a start announcement keeps working (left out: 720, twelve hours; at most a week) |
 | `restrictions` | `min-online`: a window waits, with an announcement, while fewer players are online, and starts as soon as there are enough; one that ends first is skipped. A forced start ignores it |
 | `sidebar` | The title and lines shown to players in the KOTH world, for when it runs, when it waits for players and when it doesn't; `%balance%` there is each player's own points. It goes through MiniGami's boards, so a match's sidebar comes first and players get their own board back on leaving the world |
 
 A holder who leaves the world or the server drops the hill. The round that is running keeps the config it started
 with, so a reload changes the next round.
+
+Every value can also be changed in game: `/kotha config set point.capture-seconds 10` writes it to `config.yml`, keeping
+the file's comments, and reloads; a value that would give the file a problem is refused and the file stays as it was.
+The value is YAML: `5`, `true`, `[60, 15, 2]`, `{ x: 0.5, y: 80, z: 0.5 }`, text in quotes when it holds `:` or `#`,
+and `here` for where you stand, such as `/kotha config set world.spawn here`. A key that wants a list takes a single
+value as a list of one. `/kotha config unset <key>` takes a key out, so its default applies, and `/kotha config info`
+lists the values in use, each to click to change. Keys and values complete as you type. `/kotha shop config
+info|set|unset` does the same for `shop.yml`, such as `/kotha shop config set editor.new-cost 250`.
 
 ## Schedule examples
 
@@ -153,6 +162,10 @@ under an id made from the item's type. Each entry's lore shows how, and the book
 
 Every text is in `plugins/KingOfTheHill/messages/en.yml`, in [MiniMessage](https://docs.advntr.dev/minimessage/) format.
 Keys you remove fall back to the bundled text. Use `%prefix%` for the shared prefix.
+`/kotha messages set <key> <text>` changes a text in game, such as `/kotha messages set prefix <gold>[Hill]</gold> `
+(MiniMessage or `&` colour codes), `/kotha messages info <key>` shows it as written and as players see it, and
+`/kotha messages unset <key>` brings back the bundled text. The file keeps its comments and the messages reload at once.
+The sidebar's title and lines are in `config.yml`, under `sidebar`, so `/kotha config set sidebar.title ...` changes them.
 In the announcements, `<join>...</join>` makes the text a link that sends whoever clicks it to the KOTH world at once
 (they need `koth.play`), without the client asking them to confirm a command.
 
@@ -191,6 +204,13 @@ For staff, with `koth.admin`:
 | `/kotha shop slot <id> <page> <slot>` | Move an entry to a slot (0-44) of a page (from 1) no other entry has |
 | `/kotha shop remove <id>` | Remove an entry; its saved item stays, for `/mga loot delete koth-<id>` |
 | `/kotha shop list` | List the entries of the shop in use |
+| `/kotha shop config info\|set\|unset <key> [value]` | Show, set or take out a value of `shop.yml`, such as `editor.new-cost` |
+| `/kotha config info` | List the values of `config.yml` in use, each to click to change, and its problems |
+| `/kotha config set <key> <value>` | Set a value in `config.yml` and reload, refused if the file would then have a problem |
+| `/kotha config unset <key>` | Take a key out of `config.yml`, so its default applies |
+| `/kotha messages set <key> <text>` | Change a message, `prefix` included |
+| `/kotha messages unset <key>` | Bring back a message's bundled text |
+| `/kotha messages info <key>` | Show a message as written and as players see it |
 
 For `points`, the player must have been on the server before; names are looked up from the server's user cache.
 `setup` is done in the KOTH world, except `setup leave`, and `set` and `select` need WorldEdit or FastAsyncWorldEdit. An entry `id` is
@@ -201,7 +221,7 @@ lower-case letters, digits, `_` and `-`.
 | Permission | Default | |
 |---|---|---|
 | `koth.play` | everyone | hearing when KOTH starts and ends, `/koth`, the shop, your points, and going to and leaving the KOTH world |
-| `koth.admin` | op | `/kotha`: reload, start and stop, sending players out, giving and taking points, setting up, and editing the shop |
+| `koth.admin` | op | `/kotha`: reload, start and stop, sending players out, giving and taking points, setting up, editing the shop, and changing config, shop and messages by command |
 | `minigami.ban` (MiniGami's) | op | Ban players from KOTH with `/mga ban <players> koth` |
 
 ## Placeholders

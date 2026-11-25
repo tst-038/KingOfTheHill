@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.tst_038.koth.config.FileEdits.Refusal;
+import io.github.tst_038.minigami.api.config.FileEditor.Refusal;
 import io.github.tst_038.minigami.api.menu.Place;
 import io.github.tst_038.minigami.api.reward.RewardReader;
 import java.util.List;

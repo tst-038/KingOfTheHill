@@ -18,7 +18,7 @@ dependencies:
       join-classpath: true
 permissions:
   koth.admin:
-    description: Reload KOTH, start and stop it, send players out of its world, give and take points, set it up and edit the shop
+    description: Reload KOTH, start and stop it, send players out of its world, give and take points, set it up, edit the shop, and change its config, shop and messages by command
     default: op
   koth.play:
     description: Hear when KOTH starts and ends, open the KOTH shop, see your points, and go to and leave the KOTH world
