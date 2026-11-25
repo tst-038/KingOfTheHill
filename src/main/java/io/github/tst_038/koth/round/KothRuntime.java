@@ -1,7 +1,6 @@
 package io.github.tst_038.koth.round;
 
 import io.github.tst_038.minigami.api.message.Messages;
-import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.region.DyedBlocks;
 import io.github.tst_038.minigami.api.stat.MiniGamiStats;
 import io.github.tst_038.koth.config.KothConfig;
@@ -17,6 +16,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.random.RandomGenerator;
@@ -37,7 +37,7 @@ public final class KothRuntime {
     private final Announcer announcer;
     private final Wallet wallet;
     private final MiniGamiStats miniGamiStats;
-    private final MiniGamiPlayers players;
+    private final Joining joining;
     private final StatBuffer buffer;
     private final Clock clock;
     private final RandomGenerator random;
@@ -50,13 +50,13 @@ public final class KothRuntime {
     private int secondsSinceFlush;
     private volatile KothStatus status = KothStatus.OFF;
 
-    public KothRuntime(Server server, Messages messages, Wallet wallet, MiniGamiStats miniGamiStats, MiniGamiPlayers players, Joining joining, StatBuffer buffer,
+    public KothRuntime(Server server, Messages messages, Wallet wallet, MiniGamiStats miniGamiStats, Joining joining, StatBuffer buffer,
             Clock clock, RandomGenerator random, Consumer<LocalDateTime> onDismissed, Logger logger) {
         this.server = server;
         this.announcer = new Announcer(server, messages, joining);
         this.wallet = wallet;
         this.miniGamiStats = miniGamiStats;
-        this.players = players;
+        this.joining = joining;
         this.buffer = buffer;
         this.clock = clock;
         this.random = random;
@@ -135,6 +135,13 @@ public final class KothRuntime {
         return event.isPresent();
     }
 
+    /** The player is being sent out of the KOTH world: they drop the hill if they hold it. */
+    public void leave(UUID player) {
+        if (round != null) {
+            round.leave(player);
+        }
+    }
+
     /** The plugin is going down: ends the round quietly and hands over the last stats. Call while MiniGami is still enabled. */
     public void shutdown() {
         if (round != null) {
@@ -157,7 +164,7 @@ public final class KothRuntime {
 
     private void begin(ActivationEvent.Started started) {
         roundWorld = config.world();
-        var ground = new WorldGround(server, config, announcer, wallet, players);
+        var ground = new WorldGround(server, config, announcer, wallet, joining::mayPlay);
         round = new Round(new Hill(config.point().captureSeconds(), config.scoring()), config.point().neutral(), ground, buffer, random);
         round.begin();
         secondsSinceFlush = 0;

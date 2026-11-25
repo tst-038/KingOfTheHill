@@ -27,7 +27,18 @@ class KothConfigReaderTest {
                 case "hashCode" -> System.identityHashCode(proxy);
                 default -> throw new UnsupportedOperationException(method.getName());
             });
-    private final WorldLookup worlds = name -> name.equals("koth") ? Optional.of(world) : Optional.empty();
+    private final World main = (World) Proxy.newProxyInstance(World.class.getClassLoader(), new Class<?>[] {World.class},
+            (proxy, method, args) -> switch (method.getName()) {
+                case "getName" -> "world";
+                case "equals" -> proxy == args[0];
+                case "hashCode" -> System.identityHashCode(proxy);
+                default -> throw new UnsupportedOperationException(method.getName());
+            });
+    private final WorldLookup worlds = name -> switch (name) {
+        case "koth" -> Optional.of(world);
+        case "world" -> Optional.of(main);
+        default -> Optional.empty();
+    };
 
     private KothConfig read(String yaml) throws InvalidConfigException {
         return KothConfigReader.read(Yaml.reader(yaml), worlds);
@@ -149,6 +160,24 @@ class KothConfigReaderTest {
 
         assertEquals(Optional.empty(), config.spawn());
         assertTrue(config.respawnHere());
+    }
+
+    @Test
+    void theLeaveLocationNamesItsOwnWorldAndIsLeftOutByDefault() throws Exception {
+        assertEquals(Optional.empty(), read(Yaml.bundledConfig()).leave());
+
+        var leave = read(bundledWith("  respawn-here: true\n", "  respawn-here: true\n  leave: { world: world, x: 3.5, y: 70, z: -2.5 }\n")).leave().orElseThrow();
+
+        assertSame(main, leave.getWorld());
+        assertEquals(3.5, leave.getX());
+        assertEquals(-2.5, leave.getZ());
+    }
+
+    @Test
+    void aLeaveLocationInTheKothWorldOrAnUnknownOneIsAProblem() {
+        assertEquals(List.of("config.yml: world.leave: is in the KOTH world itself"),
+                problems(bundledWith("  respawn-here: true\n", "  respawn-here: true\n  leave: { world: koth, x: 0, y: 70, z: 0 }\n")));
+        assertEquals(1, problems(bundledWith("  respawn-here: true\n", "  respawn-here: true\n  leave: { world: nether, x: 0, y: 70, z: 0 }\n")).size());
     }
 
     @Test

@@ -164,6 +164,20 @@ class RoundTest {
     }
 
     @Test
+    void aHolderSentAwayDropsTheHillAtOnce() {
+        ground.onPoint = List.of(ALICE);
+        seconds(2);
+
+        round.leave(BOB);
+        assertEquals(Optional.of(ALICE), round.holder());
+
+        round.leave(ALICE);
+        assertEquals(Optional.empty(), round.holder());
+        assertEquals(List.of("captured Alice", "dropped Alice"), ground.told);
+        assertEquals(DyeColor.WHITE, ground.painted.getLast());
+    }
+
+    @Test
     void aRandomOtherColourIsNeverTheCurrentOne() {
         var random = new Random(1);
         for (int i = 0; i < 200; i++) {

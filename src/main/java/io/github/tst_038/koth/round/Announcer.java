@@ -4,7 +4,7 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.koth.message.StatusResolver;
 import io.github.tst_038.koth.restriction.Refusal;
 import io.github.tst_038.koth.schedule.Window;
-import io.github.tst_038.koth.text.Durations;
+import io.github.tst_038.minigami.core.time.Durations;
 import io.github.tst_038.koth.text.Moments;
 import java.time.Duration;
 import java.time.LocalDateTime;

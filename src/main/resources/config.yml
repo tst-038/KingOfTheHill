@@ -6,6 +6,9 @@ world:
   spawn: { x: 0.5, y: 80, z: 0.5, yaw: 0, pitch: 0 }
   # Players who die here come back at that spawn, unless their bed or anchor is in this world.
   respawn-here: true
+  # Where /koth leave, /kotha kick and a ban send players out of this world to: a place in another world, set with
+  # /kotha setup leave. Left out: the main world's spawn.
+  # leave: { world: world, x: 0.5, y: 64, z: 0.5, yaw: 0, pitch: 0 }
 
 schedule:
   # cron: KOTH starts at each time below and runs length-minutes, or as long as its line says.

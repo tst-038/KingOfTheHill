@@ -42,6 +42,12 @@ public final class KothConfigReader {
                 ? Optional.of(ConfigLocations.read(worldSection.section("spawn"), world))
                 : Optional.<Location>empty();
         boolean respawnHere = !worldSection.has("respawn-here") || worldSection.bool("respawn-here");
+        var leave = worldSection.has("leave")
+                ? Optional.of(ConfigLocations.readWithWorld(worldSection.section("leave"), name -> worlds.load(name).orElse(null)))
+                : Optional.<Location>empty();
+        if (leave.isPresent() && world != null && world.equals(leave.get().getWorld())) {
+            worldSection.problem("leave", "is in the KOTH world itself");
+        }
 
         var schedule = root.section("schedule");
         var timetable = TimetableReader.read(schedule);
@@ -60,7 +66,7 @@ public final class KothConfigReader {
 
         root.check();
         // check() passed, so nothing above went wrong and the timetable is there.
-        return new KothConfig(world, spawn, respawnHere, new Plan(timetable.orElseThrow(), warnings, restrictions), point, scoring, lines);
+        return new KothConfig(world, spawn, respawnHere, leave, new Plan(timetable.orElseThrow(), warnings, restrictions), point, scoring, lines);
     }
 
     private static void checkLineCount(ConfigReader sidebar, String key, List<String> texts) {

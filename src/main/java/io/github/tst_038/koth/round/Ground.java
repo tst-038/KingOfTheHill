@@ -10,7 +10,7 @@ interface Ground {
     /** The players who count as standing on the hill right now, each once. */
     List<UUID> onPoint();
 
-    /** Whether the player is still where holding the hill is allowed: online, in the KOTH world and not in a match. */
+    /** Whether the player is still where holding the hill is allowed: online, in the KOTH world, not in a match and not banned. */
     boolean holderHere(UUID player);
 
     String nameOf(UUID player);

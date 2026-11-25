@@ -2,7 +2,7 @@ package io.github.tst_038.koth.status;
 
 import io.github.tst_038.koth.ledger.Balances;
 import io.github.tst_038.koth.schedule.ActivationEvent;
-import io.github.tst_038.koth.text.Durations;
+import io.github.tst_038.minigami.core.time.Durations;
 import io.github.tst_038.koth.text.Numbers;
 import io.github.tst_038.koth.text.Moments;
 import java.time.Clock;

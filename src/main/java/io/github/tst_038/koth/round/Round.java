@@ -38,13 +38,7 @@ final class Round {
 
     /** One second: a holder who is gone drops the hill, then whoever stands on it takes it or earns from it. */
     void second() {
-        hill.holder().filter(holder -> !ground.holderHere(holder)).ifPresent(holder -> {
-            hill.drop();
-            ground.dropped(holderName.orElseGet(() -> ground.nameOf(holder)));
-            holderName = Optional.empty();
-            colour = Optional.empty();
-            ground.paint(neutral);
-        });
+        hill.holder().filter(holder -> !ground.holderHere(holder)).ifPresent(this::drop);
         var onPoint = ground.onPoint();
         var tick = hill.tick(onPoint);
         tick.captured().ifPresent(player -> {
@@ -72,6 +66,19 @@ final class Round {
             return new HillBar.Capturing(ground.nameOf(taker.get()), hill.progress(), hill.captureSeconds());
         }
         return holderName.<HillBar>map(HillBar.Holding::new).orElseGet(HillBar.Free::new);
+    }
+
+    /** The player is being sent away: if they hold the hill, it is free at once, not when the next second sees them gone. */
+    void leave(UUID player) {
+        hill.holder().filter(player::equals).ifPresent(this::drop);
+    }
+
+    private void drop(UUID holder) {
+        hill.drop();
+        ground.dropped(holderName.orElseGet(() -> ground.nameOf(holder)));
+        holderName = Optional.empty();
+        colour = Optional.empty();
+        ground.paint(neutral);
     }
 
     void end() {

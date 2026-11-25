@@ -1,5 +1,6 @@
 package io.github.tst_038.koth.plugin;
 
+import io.github.tst_038.minigami.api.ban.MiniGamiBans;
 import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
@@ -21,6 +22,7 @@ import io.github.tst_038.koth.ledger.Wallet;
 import io.github.tst_038.koth.round.CombatListener;
 import io.github.tst_038.koth.placeholder.KothExpansion;
 import io.github.tst_038.koth.round.Joining;
+import io.github.tst_038.koth.round.KothBans;
 import io.github.tst_038.koth.round.KothRuntime;
 import io.github.tst_038.koth.schedule.HandledWindows;
 import io.github.tst_038.koth.setup.KothSetup;
@@ -32,8 +34,10 @@ import io.github.tst_038.koth.shop.ShopMenus;
 import io.github.tst_038.koth.shop.ShopReader;
 import io.github.tst_038.koth.stats.StatBuffer;
 import io.github.tst_038.koth.status.KothPlaceholders;
+import io.github.tst_038.koth.world.BanListener;
 import io.github.tst_038.koth.world.KothWorld;
 import io.github.tst_038.koth.world.RespawnListener;
+import io.github.tst_038.koth.world.SendOut;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -52,7 +56,7 @@ import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/** King of the Hill as a plugin of its own, on top of MiniGami's stats, saved items and players. */
+/** King of the Hill as a plugin of its own, on top of MiniGami's stats, saved items, players and bans. */
 public final class KothPlugin extends JavaPlugin {
 
     private final AtomicInteger configLoads = new AtomicInteger();
@@ -81,7 +85,8 @@ public final class KothPlugin extends JavaPlugin {
         MiniGamiPlayers players = service(MiniGamiPlayers.class);
         MiniGamiSetup setup = service(MiniGamiSetup.class);
         MiniGamiBoards boards = service(MiniGamiBoards.class);
-        if (stats == null || savedItems == null || players == null || setup == null || boards == null) {
+        MiniGamiBans miniGamiBans = service(MiniGamiBans.class);
+        if (stats == null || savedItems == null || players == null || setup == null || boards == null || miniGamiBans == null) {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -93,8 +98,9 @@ public final class KothPlugin extends JavaPlugin {
         var clock = Clock.systemDefaultZone();
         var buffer = new StatBuffer();
         handledWindows = new HandledWindows(storage);
-        var joining = new Joining(() -> runtime.config(), players, messages, serverThread);
-        runtime = new KothRuntime(getServer(), messages, wallet, stats, players, joining, buffer, clock, RandomGenerator.getDefault(),
+        var bans = new KothBans(this, miniGamiBans, messages, clock);
+        var joining = new Joining(() -> runtime.config(), players, bans, messages, serverThread);
+        runtime = new KothRuntime(getServer(), messages, wallet, stats, joining, buffer, clock, RandomGenerator.getDefault(),
                 start -> handledWindows.remember(start).exceptionally(failure -> {
                     getLogger().log(Level.WARNING, "Could not remember that the window of " + start + " was skipped or stopped", failure);
                     return null;
@@ -103,6 +109,8 @@ public final class KothPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new BalanceListener(wallet), this);
         getServer().getPluginManager().registerEvents(new CombatListener(runtime, buffer, players), this);
         getServer().getPluginManager().registerEvents(new RespawnListener(runtime::config), this);
+        var sendOut = new SendOut(runtime::config, getServer(), runtime::leave, messages, serverThread);
+        getServer().getPluginManager().registerEvents(new BanListener(bans, sendOut, serverThread), this);
         rewards = new RewardReader(savedItems);
         getServer().getOnlinePlayers().forEach(player -> wallet.load(player.getUniqueId()));
         sidebar = new KothSidebar(this, boards, messages, players, wallet.balances(), clock);
@@ -120,7 +128,7 @@ public final class KothPlugin extends JavaPlugin {
         var checkout = new Checkout(getServer(), messages, wallet, players, serverThread, getLogger());
         shopMenus = new ShopMenus(getServer(), this::shop, messages, savedItems, wallet, players, checkout, shopEditor, KothCommands.ADMIN, getLogger());
         var commands = new KothCommands(getServer(), messages, runtime, joining, wallet, this::shop, reload,
-                new KothSetup(setup, edits, messages, runtime::config), shopEditor, shopMenus, clock, serverThread, getLogger());
+                new KothSetup(setup, edits, messages, runtime::config), sendOut, shopEditor, shopMenus, clock, serverThread, getLogger());
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(commands.playerRoot(), "King of the Hill: status, shop, points and going there");
             event.registrar().register(commands.adminRoot(), "Manage King of the Hill");

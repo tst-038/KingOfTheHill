@@ -25,7 +25,7 @@ MiniGami's stats, leaderboards and placeholders under the game `koth`.
 | | |
 |---|---|
 | Server | Paper **26.3**, Java **25** |
-| Required | MiniGami **1.6** or later, which KingOfTheHill loads after and uses for stats, saved items and to know who is in a match |
+| Required | MiniGami **1.6** or later, which KingOfTheHill loads after and uses for stats, saved items, bans and to know who is in a match |
 | Optional | [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/), for `%koth_...%` |
 | Optional | [WorldEdit](https://enginehub.org/worldedit) or [FastAsyncWorldEdit](https://www.spigotmc.org/resources/fastasyncworldedit.13932/), to set the hill and the colour box by command |
 
@@ -35,6 +35,10 @@ MiniGami's stats, leaderboards and placeholders under the game `koth`.
 
 Players who are in a MiniGami match can't join KOTH, shop or receive purchases; the match comes first.
 
+KOTH takes part in MiniGami's bans with the scope `koth`: `/mga ban <players> koth [length] [reason...]` (or a ban from
+`all`) keeps players out. A banned player can't `/koth join` or use the chat link, is sent out of the KOTH world when
+banned and whenever they come in by any route, and doesn't count on the hill. `/mga unban <player> koth` lifts it.
+
 ## Setting it up
 
 1. Have a world folder for KOTH, for example `koth`, next to your other worlds. KingOfTheHill loads it if it isn't
@@ -43,16 +47,18 @@ Players who are in a MiniGami match can't join KOTH, shop or receive purchases; 
    problems isn't used, and the previous one stays in use.
 3. In the KOTH world, select the hill with WorldEdit and run `/kotha setup point set`; likewise `/kotha setup colours set`
    for the box whose dyed blocks change colour, if the hill and the layer under it (the default) aren't what you want.
-   Stand where `/koth join` should put players and run `/kotha setup spawn`. Each command writes `config.yml`, keeping
+   Stand where `/koth join` should put players and run `/kotha setup spawn`. In another world, stand where players
+   sent out of KOTH (`/koth leave`, `/kotha kick`, a ban) should go and run `/kotha setup leave`; without it they go to
+   the main world's spawn. Each command writes `config.yml`, keeping
    its comments, and reloads. A change that would give the file problems, such as a hill that is too big, isn't written. You can also set `point.region`,
-   `point.colour-blocks` and `world.spawn` in the file by hand and run `/kotha reload`.
+   `point.colour-blocks`, `world.spawn` and `world.leave` in the file by hand and run `/kotha reload`.
 4. Try it with `/kotha start 5` (a five minute round, whatever the timetable and restrictions say), and `/kotha stop`.
 
 ## config.yml
 
 | Section | What it sets |
 |---|---|
-| `world` | The `name` of the world, the `spawn` for `/koth join` (left out: the world's spawn), and `respawn-here`: players who die in the world come back at that spawn |
+| `world` | The `name` of the world, the `spawn` for `/koth join` (left out: the world's spawn), `respawn-here`: players who die in the world come back at that spawn, and `leave`: where players sent out of the world go, `{ world: <name>, x, y, z, yaw, pitch }` in another world (left out: the main world's spawn) |
 | `schedule` | When it runs, as `cron` or `cycle` (see below), and `warn-minutes`: chat warnings that long before a start |
 | `point` | The hill's `region`, `capture-seconds` to take it, `colour-blocks`, a box whose dyed blocks change colour on each capture (left out: the hill and the layer under it), and `neutral-colour` for while nobody holds the hill and KOTH isn't running |
 | `scoring` | `points` for the holder every `every-seconds`, wherever they are in the world |
@@ -159,7 +165,8 @@ For players, with `koth.play`:
 | `/koth` | Whether KOTH is running, who holds the hill and how long is left, that it is waiting for players, or when it next starts |
 | `/koth shop` | Open the shop |
 | `/koth balance` | Your points |
-| `/koth join` | Go to the KOTH world's spawn; not while in a MiniGami match |
+| `/koth join` | Go to the KOTH world's spawn; not while in a MiniGami match or banned from KOTH |
+| `/koth leave` | Leave the KOTH world, for `world.leave` |
 
 For staff, with `koth.admin`:
 
@@ -168,6 +175,7 @@ For staff, with `koth.admin`:
 | `/kotha reload` | Read `config.yml`, `shop.yml` and the messages again |
 | `/kotha start [minutes]` | Start a round now, for the given length or the timetable's, whatever the restrictions say |
 | `/kotha stop` | End the running round, or stop waiting for players in this window |
+| `/kotha kick <players>` | Send players (a name or a selector such as `@a[distance=..10]`) out of the KOTH world, dropping the hill if they hold it |
 | `/kotha status` | State (running, waiting or idle), holder, who is taking the hill, next start, players online, and whether the config and shop are loaded |
 | `/kotha points show <player>` | A player's points |
 | `/kotha points give <player> <amount>` | Give points |
@@ -175,6 +183,7 @@ For staff, with `koth.admin`:
 | `/kotha setup point set\|select\|show` | Set the hill to your WorldEdit selection, select it with WorldEdit, or outline it in particles for a few seconds |
 | `/kotha setup colours set\|select\|show` | The same for the box of blocks that change colour |
 | `/kotha setup spawn` | Set the spawn of `/koth join` to where you stand |
+| `/kotha setup leave` | Set where players sent out of the KOTH world go to where you stand, in another world |
 | `/kotha shop` | Open the shop editor (from the console: list the entries) |
 | `/kotha shop add <id> <cost>` | Sell the item you hold, saved in MiniGami as `koth-<id>` |
 | `/kotha shop command <id> <cost> <command...>` | Sell a command, run from the console with `%player%` being the buyer; the item you hold is its icon and gives it its name |
@@ -184,15 +193,16 @@ For staff, with `koth.admin`:
 | `/kotha shop list` | List the entries of the shop in use |
 
 For `points`, the player must have been on the server before; names are looked up from the server's user cache.
-`setup` is done in the KOTH world, and `set` and `select` need WorldEdit or FastAsyncWorldEdit. An entry `id` is
+`setup` is done in the KOTH world, except `setup leave`, and `set` and `select` need WorldEdit or FastAsyncWorldEdit. An entry `id` is
 lower-case letters, digits, `_` and `-`.
 
 ## Permissions
 
 | Permission | Default | |
 |---|---|---|
-| `koth.play` | everyone | `/koth`, the shop, your points and going to the KOTH world |
-| `koth.admin` | op | `/kotha`: reload, start and stop, giving and taking points, setting up, and editing the shop |
+| `koth.play` | everyone | `/koth`, the shop, your points, and going to and leaving the KOTH world |
+| `koth.admin` | op | `/kotha`: reload, start and stop, sending players out, giving and taking points, setting up, and editing the shop |
+| `minigami.ban` (MiniGami's) | op | Ban players from KOTH with `/mga ban <players> koth` |
 
 ## Placeholders
 

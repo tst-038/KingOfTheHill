@@ -19,8 +19,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 /**
- * What {@code /kotha setup} does: sets the hill, the colour box and the spawn in {@code config.yml} from where the player
- * is, and selects or shows the boxes that are set. Server thread only.
+ * What {@code /kotha setup} does: sets the hill, the colour box, the spawn and where players are sent out to in
+ * {@code config.yml} from where the player is, and selects or shows the boxes that are set. Server thread only.
  */
 public final class KothSetup {
 
@@ -90,6 +90,17 @@ public final class KothSetup {
     public void spawn(Player player) {
         var spawn = ConfigLocations.write(player.getLocation());
         writeInWorld(player, file -> file.set("world.spawn", spawn), "setup.spawn-set");
+    }
+
+    /** Sets where players sent out of the KOTH world go to where the player stands, which must be in another world. */
+    public void leave(Player player) {
+        var here = player.getWorld();
+        var leave = ConfigLocations.writeWithWorld(player.getLocation());
+        var kothWorld = config.get().map(KothConfig::world);
+        // Checked off the server thread, so against the worlds known now: the player's and the KOTH world in use.
+        edits.editAndReload(player, KothFiles.CONFIG, file -> file.set("world.leave", leave),
+                file -> KothConfigLoader.load(file, name -> name.equals(here.getName()) ? Optional.of(here)
+                        : kothWorld.filter(world -> world.getName().equals(name))).problems(), "setup.leave-set");
     }
 
     private Optional<Region> inUse(Player player, Box box) {

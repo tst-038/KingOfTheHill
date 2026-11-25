@@ -43,6 +43,29 @@ join:
   done: "%prefix%<gray>Off you go."
   # Clicking the link in an announcement without koth.play
   no-permission: "%prefix%<red>You may not play King of the Hill."
+# /koth leave
+leave:
+  done: "%prefix%<gray>You left the KOTH world."
+  not-there: "%prefix%<red>You're not in the KOTH world."
+# /kotha kick <players>. %player%
+kick:
+  # To the player sent out
+  kicked: "%prefix%<red>Staff sent you out of the KOTH world."
+  done: "%prefix%<green>Sent <white>%player%</white> out of the KOTH world."
+  not-there: "%prefix%<red>%player% is not in the KOTH world."
+  none: "%prefix%<red>No online player matched."
+  # %count%: players sent out, %total%: players named
+  several: "%prefix%<green>Sent <white>%count%</white> of %total% players out of the KOTH world."
+# Bans from KOTH, made with MiniGami's /mga ban <players> koth (or all). %left%: "for 2h 5m" or "for good", %reason%
+ban:
+  # Trying to join, or coming into the KOTH world
+  banned: "%prefix%<red>You're banned from King of the Hill %left%<red>: <white>%reason%"
+  # Sent out of the KOTH world when the ban is made; MiniGami tells them the ban itself
+  sent-out: "%prefix%<red>You were sent out of the KOTH world."
+  # %time%: like 2h 5m
+  left: "<gray>for <white>%time%</white>"
+  forever: "<gray>for good"
+  no-reason: "<gray>no reason given"
 shop:
   cost-line: "<gray>Cost: <gold>%cost%</gold> points"
   owned-line: "<green>You have this already"
@@ -101,6 +124,7 @@ setup:
   # %seconds%
   box-showing: "%prefix%<gray>Showing %box% for %seconds% seconds."
   spawn-set: "%prefix%<green>Saved the spawn where you stand in config.yml."
+  leave-set: "%prefix%<green>Saved where you stand as where players are sent out to, in config.yml."
 # Changing a file by command. %file%
 edit:
   not-saved: "%prefix%<red>%file% was left as it was; it would have these problems:"

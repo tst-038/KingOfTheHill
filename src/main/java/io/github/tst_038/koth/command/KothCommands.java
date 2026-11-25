@@ -9,6 +9,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.api.menu.PageLayout;
 import io.github.tst_038.minigami.api.menu.Place;
 import io.github.tst_038.minigami.api.message.Messages;
@@ -21,11 +22,13 @@ import io.github.tst_038.koth.setup.KothSetup.Box;
 import io.github.tst_038.koth.shop.Shop;
 import io.github.tst_038.koth.shop.ShopEditor;
 import io.github.tst_038.koth.shop.ShopMenus;
+import io.github.tst_038.koth.world.SendOut;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -43,8 +46,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /**
- * {@code /koth [shop|balance|join]} for players, and {@code /kotha reload|start [minutes]|stop|status|points give|take|show <player> [amount]}
- * and {@code /kotha setup point|colours set|select|show}, {@code /kotha setup spawn} and
+ * {@code /koth [shop|balance|join|leave]} for players, and {@code /kotha reload|start [minutes]|stop|status|kick <players>|points give|take|show <player> [amount]}
+ * and {@code /kotha setup point|colours set|select|show}, {@code /kotha setup spawn|leave} and
  * {@code /kotha shop [add|command|cost|slot|remove|list]} for staff, the shop editor without a subcommand. Server thread only.
  */
 public final class KothCommands {
@@ -69,6 +72,7 @@ public final class KothCommands {
     private final Supplier<Shop> shop;
     private final Consumer<Audience> reload;
     private final KothSetup setup;
+    private final SendOut sendOut;
     private final ShopEditor shopEditor;
     private final ShopMenus shopMenus;
     private final Clock clock;
@@ -76,7 +80,7 @@ public final class KothCommands {
     private final Logger logger;
 
     public KothCommands(Server server, Messages messages, KothRuntime runtime, Joining joining, Wallet wallet, Supplier<Shop> shop,
-            Consumer<Audience> reload, KothSetup setup, ShopEditor shopEditor, ShopMenus shopMenus, Clock clock, Executor serverThread, Logger logger) {
+            Consumer<Audience> reload, KothSetup setup, SendOut sendOut, ShopEditor shopEditor, ShopMenus shopMenus, Clock clock, Executor serverThread, Logger logger) {
         this.server = server;
         this.messages = messages;
         this.runtime = runtime;
@@ -85,6 +89,7 @@ public final class KothCommands {
         this.shop = shop;
         this.reload = reload;
         this.setup = setup;
+        this.sendOut = sendOut;
         this.shopEditor = shopEditor;
         this.shopMenus = shopMenus;
         this.clock = clock;
@@ -99,6 +104,7 @@ public final class KothCommands {
                 .then(Commands.literal("shop").requires(KothCommands::isPlayer).executes(byPlayer(shopMenus::openShop)))
                 .then(Commands.literal("balance").requires(KothCommands::isPlayer).executes(byPlayer(this::balance)))
                 .then(Commands.literal("join").requires(KothCommands::isPlayer).executes(byPlayer(joining::join)))
+                .then(Commands.literal("leave").requires(KothCommands::isPlayer).executes(byPlayer(this::leave)))
                 .build();
     }
 
@@ -115,6 +121,10 @@ public final class KothCommands {
                                 })))
                 .then(Commands.literal("stop").executes(bySender(this::stop)))
                 .then(Commands.literal("status").executes(bySender(this::adminStatus)))
+                .then(Commands.literal("kick").then(Commands.argument("players", PlayerTargets.argument()).executes(context -> {
+                    kick(context.getSource().getSender(), PlayerTargets.resolve(context, "players"));
+                    return Command.SINGLE_SUCCESS;
+                })))
                 .then(Commands.literal("points")
                         .then(Commands.literal("show").then(target().executes(context -> points(context, Points.SHOW, 0))))
                         .then(Commands.literal("give").then(target().then(amount().executes(context -> points(context, Points.GIVE, amountOf(context))))))
@@ -122,7 +132,8 @@ public final class KothCommands {
                 .then(Commands.literal("setup").requires(KothCommands::isPlayer)
                         .then(box("point", Box.POINT))
                         .then(box("colours", Box.COLOURS))
-                        .then(Commands.literal("spawn").executes(byPlayer(setup::spawn))))
+                        .then(Commands.literal("spawn").executes(byPlayer(setup::spawn)))
+                        .then(Commands.literal("leave").executes(byPlayer(setup::leave))))
                 .then(Commands.literal("shop")
                         .executes(context -> {
                             // The editor is a menu; the console gets the list instead.
@@ -189,7 +200,22 @@ public final class KothCommands {
         }
     }
 
+    private void leave(Player player) {
+        if (!sendOut.send(player, "leave.done")) {
+            messages.send(player, "leave.not-there");
+        }
+    }
+
     // Staff.
+
+    /** Sends each player out of the KOTH world; one summary for several. */
+    private void kick(CommandSender sender, List<Player> players) {
+        PlayerTargets.each(messages, sender, players, (feedback, player) -> {
+            var kicked = sendOut.send(player, "kick.kicked");
+            messages.send(feedback, kicked ? "kick.done" : "kick.not-there", Placeholder.unparsed("player", player.getName()));
+            return kicked;
+        }, "kick.none", "kick.several");
+    }
 
     private void start(CommandSender sender, Optional<Duration> length) {
         if (runtime.config().isEmpty()) {

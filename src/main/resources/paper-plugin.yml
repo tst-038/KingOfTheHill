@@ -6,7 +6,7 @@ authors: [tst-038]
 api-version: '26.3'
 dependencies:
   server:
-    # Provides the api and core classes, stats, saved items and players.
+    # Provides the api and core classes, stats, saved items, players and bans.
     MiniGami:
       load: BEFORE
       required: true
@@ -18,8 +18,8 @@ dependencies:
       join-classpath: true
 permissions:
   koth.admin:
-    description: Reload KOTH, start and stop it, give and take points, set it up and edit the shop
+    description: Reload KOTH, start and stop it, send players out of its world, give and take points, set it up and edit the shop
     default: op
   koth.play:
-    description: Open the KOTH shop, see your points and go to the KOTH world
+    description: Open the KOTH shop, see your points, and go to and leave the KOTH world
     default: true

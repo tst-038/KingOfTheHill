@@ -1,11 +1,11 @@
 package io.github.tst_038.koth.round;
 
-import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.region.DyedBlocks;
 import io.github.tst_038.koth.config.KothConfig;
 import io.github.tst_038.koth.ledger.Wallet;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.bukkit.DyeColor;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -22,16 +22,16 @@ final class WorldGround implements Ground {
     private final DyedBlocks colours;
     private final Announcer announcer;
     private final Wallet wallet;
-    private final MiniGamiPlayers players;
+    private final Predicate<UUID> mayPlay;
 
-    WorldGround(Server server, KothConfig config, Announcer announcer, Wallet wallet, MiniGamiPlayers players) {
+    WorldGround(Server server, KothConfig config, Announcer announcer, Wallet wallet, Predicate<UUID> mayPlay) {
         this.server = server;
         this.world = config.world();
-        this.watcher = new PointWatcher(config.point().region(), players);
+        this.watcher = new PointWatcher(config.point().region(), mayPlay);
         this.colours = DyedBlocks.scan(config.point().colourBox(), DyedBlocks.DYED);
         this.announcer = announcer;
         this.wallet = wallet;
-        this.players = players;
+        this.mayPlay = mayPlay;
     }
 
     @Override
@@ -42,7 +42,7 @@ final class WorldGround implements Ground {
     @Override
     public boolean holderHere(UUID player) {
         var online = server.getPlayer(player);
-        return online != null && online.getWorld().equals(world) && !players.isInMatch(player);
+        return online != null && online.getWorld().equals(world) && mayPlay.test(player);
     }
 
     @Override
