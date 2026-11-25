@@ -4,8 +4,8 @@ announce:
   warning: "%prefix%<yellow>King of the Hill starts in <white>%time%</white>. <click:run_command:'/koth join'><gold>[Go there]</gold></click>"
   # %end%: when it ends
   started: "%prefix%<green>King of the Hill is on until <white>%end%</white>! <click:run_command:'/koth join'><gold>[Go there]</gold></click>"
-  # %reason%: why, from restriction.*
-  skipped: "%prefix%<red>King of the Hill is skipped: %reason%."
+  # %reason%: why, from restriction.*; %end%: when the window ends
+  waiting: "%prefix%<yellow>King of the Hill is waiting: %reason%. It starts as soon as that changes, and runs until <white>%end%</white> at most."
   ended: "%prefix%<gray>King of the Hill is over."
   # %player%
   captured: "%prefix%<gold>%player%</gold> <yellow>took the hill!"
@@ -17,6 +17,8 @@ placeholder:
   never: "<gray>not planned"
 status:
   active: "%prefix%<green>Running. <white>Holder: <gold>%holder%</gold>, <white>%time_left%</white> left."
+  # %reason%: why, from restriction.*
+  waiting: "%prefix%<yellow>Waiting to start: %reason%. <white>%time_left%</white> left of this window."
   inactive: "%prefix%<gray>Not running. Next: <white>%next_start%</white> (in %next_in%)."
   not-configured: "%prefix%<red>KOTH isn't set up; staff can see why in the log."
 balance:
@@ -56,6 +58,7 @@ admin:
   unknown-player: "%prefix%<red>No player called <white>%player%</white> has been here."
   state-running: "<green>running"
   state-idle: "<gray>idle"
+  state-waiting: "<yellow>waiting"
   loaded: "<green>ok"
   not-loaded: "<red>not loaded"
   storage-failed: "%prefix%<red>The points storage failed; see the log."

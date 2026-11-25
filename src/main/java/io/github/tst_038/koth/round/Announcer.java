@@ -1,6 +1,7 @@
 package io.github.tst_038.koth.round;
 
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.koth.message.StatusResolver;
 import io.github.tst_038.koth.restriction.Refusal;
 import io.github.tst_038.koth.schedule.Window;
 import io.github.tst_038.koth.text.Durations;
@@ -8,7 +9,7 @@ import io.github.tst_038.koth.text.Moments;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Server;
 import org.bukkit.World;
 
@@ -31,9 +32,14 @@ final class Announcer {
         messages.send(server, "announce.started", Placeholder.unparsed("end", Moments.format(window.end())));
     }
 
-    void skipped(Refusal refusal) {
-        var values = refusal.values().entrySet().stream().map(value -> Placeholder.unparsed(value.getKey(), value.getValue())).toArray(TagResolver[]::new);
-        messages.send(server, "announce.skipped", Placeholder.component("reason", messages.render(refusal.messageKey(), values)));
+    void waiting(Window window, Refusal refusal) {
+        messages.send(server, "announce.waiting", Placeholder.component("reason", StatusResolver.reason(messages, refusal)),
+                Placeholder.unparsed("end", Moments.format(window.end())));
+    }
+
+    /** Why a start was refused, as plain text for the log. */
+    String reason(Refusal refusal) {
+        return PlainTextComponentSerializer.plainText().serialize(StatusResolver.reason(messages, refusal));
     }
 
     void ended() {

@@ -51,8 +51,8 @@ Players who are in a MiniGami match can't join KOTH, shop or receive purchases; 
 | `schedule` | When it runs, as `cron` or `cycle` (see below), and `warn-minutes`: chat warnings that long before a start |
 | `point` | The hill's `region`, `capture-seconds` to take it, and optional `colour-blocks` that change colour on each capture |
 | `scoring` | `points` for the holder every `every-seconds`, wherever they are in the world |
-| `restrictions` | `min-online`: a start is skipped, with an announcement, while fewer players are online. A forced start ignores it |
-| `sidebar` | The title and lines shown to players in the KOTH world, for when it runs and when it doesn't |
+| `restrictions` | `min-online`: a window waits, with an announcement, while fewer players are online, and starts as soon as there are enough; one that ends first is skipped. A forced start ignores it |
+| `sidebar` | The title and lines shown to players in the KOTH world, for when it runs, when it waits for players and when it doesn't |
 
 A holder who leaves the world or the server drops the hill. The round that is running keeps the config it started
 with, so a reload changes the next round.
@@ -124,7 +124,7 @@ For players, with `koth.play`:
 
 | Command | |
 |---|---|
-| `/koth` | Whether KOTH is running, who holds the hill and how long is left, or when it next starts |
+| `/koth` | Whether KOTH is running, who holds the hill and how long is left, that it is waiting for players, or when it next starts |
 | `/koth shop` | Open the shop |
 | `/koth balance` | Your points |
 | `/koth join` | Go to the KOTH world's spawn; not while in a MiniGami match |
@@ -135,8 +135,8 @@ For staff, with `koth.admin`:
 |---|---|
 | `/kotha reload` | Read `config.yml`, `shop.yml` and the messages again |
 | `/kotha start [minutes]` | Start a round now, for the given length or the timetable's, whatever the restrictions say |
-| `/kotha stop` | End the running round |
-| `/kotha status` | State, holder, who is taking the hill, next start, players online, and whether the config and shop are loaded |
+| `/kotha stop` | End the running round, or stop waiting for players in this window |
+| `/kotha status` | State (running, waiting or idle), holder, who is taking the hill, next start, players online, and whether the config and shop are loaded |
 | `/kotha points show <player>` | A player's points |
 | `/kotha points give <player> <amount>` | Give points |
 | `/kotha points take <player> <amount>` | Take points, down to zero at the lowest |
@@ -158,7 +158,8 @@ With PlaceholderAPI installed, KingOfTheHill's own:
 |---|---|
 | `%koth_active%` | `true` while a round runs, otherwise `false` |
 | `%koth_holder%` | Name of the holder, empty if none |
-| `%koth_time_left%` | Time left in the round, empty while it isn't running |
+| `%koth_waiting%` | `true` while a window is open but waiting for enough players, otherwise `false` |
+| `%koth_time_left%` | Time left in the round, or in the window while it waits; empty otherwise |
 | `%koth_next_start%` | When it next starts, empty if nothing is planned |
 | `%koth_next_in%` | How long until then |
 | `%koth_balance%` | The viewer's points to spend |

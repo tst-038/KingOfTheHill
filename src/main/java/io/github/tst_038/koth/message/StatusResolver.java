@@ -1,10 +1,12 @@
 package io.github.tst_038.koth.message;
 
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.koth.restriction.Refusal;
 import io.github.tst_038.koth.status.KothPlaceholders;
 import io.github.tst_038.koth.status.KothStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 
@@ -12,6 +14,16 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 public final class StatusResolver {
 
     private StatusResolver() {
+    }
+
+    /** The values of a refusal as placeholders, such as {@code %online%} and {@code %needed%}. */
+    public static TagResolver of(Refusal refusal) {
+        return TagResolver.resolver(refusal.values().entrySet().stream().map(value -> Placeholder.unparsed(value.getKey(), value.getValue())).toList());
+    }
+
+    /** Why a start was refused, in words. */
+    public static Component reason(Messages messages, Refusal refusal) {
+        return messages.render(refusal.messageKey(), of(refusal));
     }
 
     public static TagResolver of(Messages messages, KothStatus status, LocalDateTime now) {

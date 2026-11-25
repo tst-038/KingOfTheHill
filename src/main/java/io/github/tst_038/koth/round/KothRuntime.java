@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 import java.util.random.RandomGenerator;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -40,6 +41,7 @@ public final class KothRuntime {
     private final Clock clock;
     private final RandomGenerator random;
     private final Consumer<LocalDateTime> onDismissed;
+    private final Logger logger;
     private KothConfig config;
     private Activations activations;
     private Round round;
@@ -48,7 +50,7 @@ public final class KothRuntime {
     private volatile KothStatus status = KothStatus.OFF;
 
     public KothRuntime(Server server, Messages messages, Wallet wallet, MiniGamiStats miniGamiStats, MiniGamiPlayers players, StatBuffer buffer,
-            Clock clock, RandomGenerator random, Consumer<LocalDateTime> onDismissed) {
+            Clock clock, RandomGenerator random, Consumer<LocalDateTime> onDismissed, Logger logger) {
         this.server = server;
         this.announcer = new Announcer(server, messages);
         this.wallet = wallet;
@@ -58,6 +60,7 @@ public final class KothRuntime {
         this.clock = clock;
         this.random = random;
         this.onDismissed = onDismissed;
+        this.logger = logger;
     }
 
     /**
@@ -105,7 +108,7 @@ public final class KothRuntime {
     }
 
     private void publish(LocalDateTime now) {
-        status = new KothStatus(activations.running(), Optional.ofNullable(round).flatMap(Round::holderName),
+        status = new KothStatus(activations.running(), activations.waiting(), Optional.ofNullable(round).flatMap(Round::holderName),
                 Optional.ofNullable(round).flatMap(Round::taker), round == null ? 0 : round.progress(), activations.nextStart(now));
     }
 
@@ -114,7 +117,7 @@ public final class KothRuntime {
         return forced(config != null ? activations.forceStart(LocalDateTime.now(clock), length) : Optional.empty());
     }
 
-    /** Staff stop. @return false if KOTH isn't set up or isn't running */
+    /** Staff stop, of a round or of the wait for players. @return false if KOTH isn't set up and neither running nor waiting */
     public boolean forceStop() {
         return forced(config != null ? activations.forceStop(LocalDateTime.now(clock)) : Optional.empty());
     }
@@ -138,7 +141,9 @@ public final class KothRuntime {
     private void handle(ActivationEvent event) {
         switch (event) {
             case ActivationEvent.Warning warning -> announcer.warning(warning.before(), warning.start());
-            case ActivationEvent.Skipped skipped -> announcer.skipped(skipped.refusal());
+            case ActivationEvent.Waiting waiting -> announcer.waiting(waiting.window(), waiting.refusal());
+            case ActivationEvent.Skipped skipped -> logger.info("KOTH was skipped, as no start was allowed before its window ended: " + announcer.reason(skipped.refusal()));
+            case ActivationEvent.Cancelled ignored -> { }
             case ActivationEvent.Started started -> begin(started);
             case ActivationEvent.Ended ignored -> finish();
         }

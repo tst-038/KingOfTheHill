@@ -45,11 +45,13 @@ scoring:
   every-seconds: 1
 
 restrictions:
-  # A start is skipped, with an announcement, while fewer players than this are online (0: no limit).
-  # A forced start (/kotha start) and a start resumed after a restart ignore it.
+  # A window waits, with an announcement, while fewer players than this are online. KOTH starts as soon as there are
+  # enough, and runs until the window's end; a window that ends before that is skipped.
+  # A forced start (/kotha start) ignores it.
   min-online: 3
 
-# The sidebar of players in the KOTH world. %holder%, %time_left%, %next_start%, %next_in% and %prefix% work here.
+# The sidebar of players in the KOTH world. %holder%, %time_left%, %next_start%, %next_in% and %prefix% work here,
+# and in waiting also %online% and %needed% (%time_left% is then the time left of the window). At most 15 lines each.
 sidebar:
   title: "<gold><bold>King of the Hill"
   inactive:
@@ -57,6 +59,11 @@ sidebar:
     - ""
     - "<white>Next: <yellow>%next_start%"
     - "<gray>in %next_in%"
+  waiting:
+    - "<yellow>Waiting for players"
+    - "<white>%online%/%needed% online"
+    - ""
+    - "<gray>Window ends in %time_left%"
   active:
     - "<white>Holder: <gold>%holder%"
     - "<white>Time left: <yellow>%time_left%"

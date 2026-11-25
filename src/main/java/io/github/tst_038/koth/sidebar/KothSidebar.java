@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Criteria;
@@ -21,8 +22,8 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Scoreboard;
 
 /**
- * The sidebar of the players in the KOTH world: that KOTH isn't running and when it next starts, or who holds
- * the hill and how long is left. One board is shared by everyone. Each player's own board is remembered when they
+ * The sidebar of the players in the KOTH world: that KOTH isn't running and when it next starts, that it waits for
+ * players, or who holds the hill and how long is left. One board is shared by everyone. Each player's own board is remembered when they
  * get it and given back when they leave the world or the plugin stops; players MiniGami holds in a match keep
  * the match's board. Server thread only, driven once a second by {@link #update}.
  */
@@ -53,9 +54,10 @@ public final class KothSidebar {
             return;
         }
         var lines = config.get().sidebar();
-        var resolver = StatusResolver.of(messages, status, LocalDateTime.now(clock));
-        draw(messages.parse(lines.title(), resolver), (status.running().isPresent() ? lines.active() : lines.inactive()).stream()
-                .map(text -> messages.parse(text, resolver)).toList());
+        var resolver = TagResolver.resolver(StatusResolver.of(messages, status, LocalDateTime.now(clock)),
+                status.waiting().map(wait -> StatusResolver.of(wait.refusal())).orElse(TagResolver.empty()));
+        var texts = status.running().isPresent() ? lines.active() : status.waiting().isPresent() ? lines.waiting() : lines.inactive();
+        draw(messages.parse(lines.title(), resolver), texts.stream().map(text -> messages.parse(text, resolver)).toList());
         var world = config.get().world();
         for (Player player : server.getOnlinePlayers()) {
             if (player.getWorld().equals(world) && !players.isInMatch(player.getUniqueId())) {

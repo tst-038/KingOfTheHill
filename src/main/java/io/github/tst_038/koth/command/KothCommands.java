@@ -116,7 +116,12 @@ public final class KothCommands {
             messages.send(sender, "status.not-configured");
         } else {
             var status = runtime.status();
-            messages.send(sender, status.running().isPresent() ? "status.active" : "status.inactive", StatusResolver.of(messages, status, LocalDateTime.now(clock)));
+            var resolver = StatusResolver.of(messages, status, LocalDateTime.now(clock));
+            if (status.waiting().isPresent()) {
+                messages.send(sender, "status.waiting", resolver, Placeholder.component("reason", StatusResolver.reason(messages, status.waiting().get().refusal())));
+            } else {
+                messages.send(sender, status.running().isPresent() ? "status.active" : "status.inactive", resolver);
+            }
         }
     }
 
@@ -181,7 +186,7 @@ public final class KothCommands {
         var config = runtime.config();
         var taker = status.taker().map(server::getPlayer).map(Player::getName);
         messages.send(sender, "admin.status", StatusResolver.of(messages, status, LocalDateTime.now(clock)),
-                Placeholder.component("state", messages.render(status.running().isPresent() ? "admin.state-running" : "admin.state-idle")),
+                Placeholder.component("state", messages.render(status.running().isPresent() ? "admin.state-running" : status.waiting().isPresent() ? "admin.state-waiting" : "admin.state-idle")),
                 Placeholder.component("taker", taker.isPresent() ? Component.text(taker.get()) : messages.render("placeholder.no-holder")),
                 Placeholder.unparsed("progress", String.valueOf(status.progress())),
                 Placeholder.unparsed("capture", String.valueOf(config.map(found -> found.point().captureSeconds()).orElse(0))),

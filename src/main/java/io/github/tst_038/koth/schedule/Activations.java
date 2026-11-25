@@ -1,5 +1,6 @@
 package io.github.tst_038.koth.schedule;
 
+import io.github.tst_038.koth.restriction.Refusal;
 import io.github.tst_038.koth.restriction.Situation;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -13,17 +14,19 @@ import java.util.function.Consumer;
  * The server thread ticks it about once a second. Not thread-safe.
  *
  * <p>Every window is handled once: a window that was skipped, stopped or has ended is not offered again.
- * A window already open when this was created (a server restart in the middle of it) resumes without
- * asking the restrictions. Warnings are given once each, never for a moment before this was created,
+ * When a window opens (or is already open when this was created, as after a restart) and a restriction refuses,
+ * it waits: the restrictions are asked again every tick, and KOTH starts as soon as none refuses, running until the
+ * window's own end. A window that ends while it waits is skipped. A forced start ignores the restrictions.
+ * Warnings are given once each, never for a moment before this was created,
  * and never while KOTH runs. A window that was skipped or stopped is handed to the caller to remember, and is not
  * resumed by the next {@code Activations} either.
  */
 public final class Activations {
 
-    private final LocalDateTime createdAt;
     private final Consumer<LocalDateTime> onDismissed;
     private Plan plan;
     private Optional<Window> running = Optional.empty();
+    private Optional<ActivationEvent.Waiting> waiting = Optional.empty();
     /** The start of the window last handled. */
     private Optional<LocalDateTime> handled;
     private LocalDateTime previousTick;
@@ -38,7 +41,6 @@ public final class Activations {
      */
     public Activations(Plan plan, LocalDateTime createdAt, Optional<LocalDateTime> dismissedBefore, Consumer<LocalDateTime> onDismissed) {
         this.plan = plan;
-        this.createdAt = createdAt;
         this.previousTick = createdAt;
         this.handled = dismissedBefore;
         this.onDismissed = onDismissed;
@@ -55,14 +57,11 @@ public final class Activations {
             events.add(new ActivationEvent.Ended(window));
             running = Optional.empty();
         });
-        if (running.isEmpty()) {
+        waiting.ifPresent(wait -> events.addAll(keepWaiting(wait, now, situation)));
+        if (running.isEmpty() && waiting.isEmpty()) {
             plan.timetable().current(now).filter(window -> !handled.equals(Optional.of(window.start()))).ifPresent(window -> {
                 handled = Optional.of(window.start());
-                var event = window.start().isBefore(createdAt) ? started(window) : startOrSkip(window, situation);
-                if (event instanceof ActivationEvent.Skipped) {
-                    onDismissed.accept(window.start());
-                }
-                events.add(event);
+                events.add(refusal(situation).<ActivationEvent>map(refusal -> wait(window, refusal)).orElseGet(() -> started(window)));
             });
         }
         if (running.isEmpty()) {
@@ -84,16 +83,21 @@ public final class Activations {
         if (running.isPresent()) {
             return Optional.empty();
         }
+        waiting = Optional.empty();
         // The forced run stands in for any window open right now.
         plan.timetable().current(now).ifPresent(window -> handled = Optional.of(window.start()));
         return Optional.of(started(new Window(now, now.plus(length.orElse(plan.timetable().length())))));
     }
 
-    /** Staff stop. The window open right now is not started again. Empty if nothing is running. */
+    /** Staff stop. The window open right now is not started again. Empty if nothing is running or waiting. */
     public Optional<ActivationEvent> forceStop(LocalDateTime now) {
         var window = running;
         if (window.isEmpty()) {
-            return Optional.empty();
+            return waiting.map(wait -> {
+                waiting = Optional.empty();
+                onDismissed.accept(wait.window().start());
+                return new ActivationEvent.Cancelled(wait.window());
+            });
         }
         running = Optional.empty();
         plan.timetable().current(now).ifPresent(open -> {
@@ -107,17 +111,42 @@ public final class Activations {
         return running;
     }
 
+    /** The window that is open and refused by a restriction, with the latest refusal. */
+    public Optional<ActivationEvent.Waiting> waiting() {
+        return waiting;
+    }
+
     public Optional<LocalDateTime> nextStart(LocalDateTime now) {
         return plan.timetable().next(now).map(Window::start);
     }
 
-    private ActivationEvent startOrSkip(Window window, Situation situation) {
+    private Optional<Refusal> refusal(Situation situation) {
         return plan.restrictions().stream()
                 .map(restriction -> restriction.check(situation))
                 .flatMap(Optional::stream)
-                .findFirst()
-                .<ActivationEvent>map(refusal -> new ActivationEvent.Skipped(refusal))
-                .orElseGet(() -> started(window));
+                .findFirst();
+    }
+
+    private ActivationEvent wait(Window window, Refusal refusal) {
+        var event = new ActivationEvent.Waiting(window, refusal);
+        waiting = Optional.of(event);
+        return event;
+    }
+
+    /** One tick of a window that is waiting: it is skipped when it has ended, and starts if nothing refuses now. */
+    private List<ActivationEvent> keepWaiting(ActivationEvent.Waiting wait, LocalDateTime now, Situation situation) {
+        if (!now.isBefore(wait.window().end())) {
+            waiting = Optional.empty();
+            onDismissed.accept(wait.window().start());
+            return List.of(new ActivationEvent.Skipped(wait.refusal()));
+        }
+        var refusal = refusal(situation);
+        if (refusal.isEmpty()) {
+            waiting = Optional.empty();
+            return List.of(started(wait.window()));
+        }
+        waiting = Optional.of(new ActivationEvent.Waiting(wait.window(), refusal.get()));
+        return List.of();
     }
 
     private ActivationEvent started(Window window) {

@@ -15,8 +15,16 @@ public sealed interface ActivationEvent {
     record Started(Window window) implements ActivationEvent {
     }
 
-    /** A window came and a restriction said no, so it won't run. */
+    /** A window opened and a restriction said no; KOTH starts as soon as none does, if that is before the window ends. */
+    record Waiting(Window window, Refusal refusal) implements ActivationEvent {
+    }
+
+    /** A window ended while still waiting, so it didn't run. The refusal is the last one given. */
     record Skipped(Refusal refusal) implements ActivationEvent {
+    }
+
+    /** Staff stopped the wait of a window. */
+    record Cancelled(Window window) implements ActivationEvent {
     }
 
     /** KOTH should end now. */

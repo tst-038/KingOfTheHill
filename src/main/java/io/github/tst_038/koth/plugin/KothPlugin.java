@@ -86,7 +86,7 @@ public final class KothPlugin extends JavaPlugin {
                 start -> handledWindows.remember(start).exceptionally(failure -> {
                     getLogger().log(Level.WARNING, "Could not remember that the window of " + start + " was skipped or stopped", failure);
                     return null;
-                }));
+                }), getLogger());
 
         getServer().getPluginManager().registerEvents(new BalanceListener(wallet), this);
         getServer().getPluginManager().registerEvents(new CombatListener(runtime, buffer, players), this);

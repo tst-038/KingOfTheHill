@@ -60,6 +60,7 @@ class KothConfigReaderTest {
         assertEquals(0.5, config.spawnOrDefault().getX());
         assertTrue(config.respawnHere());
         assertEquals(4, config.sidebar().inactive().size());
+        assertEquals(4, config.sidebar().waiting().size());
         assertEquals(2, config.sidebar().active().size());
     }
 
@@ -140,6 +141,21 @@ class KothConfigReaderTest {
         var yaml = bundledWith(line, (line + "\n").repeat(15).stripTrailing());
 
         assertEquals(List.of("config.yml: sidebar.active: has more than 15 lines"), problems(yaml));
+    }
+
+    @Test
+    void moreWaitingSidebarLinesThanTheClientShowsIsAProblem() {
+        var line = "    - \"<gray>Window ends in %time_left%\"";
+        var yaml = bundledWith(line, (line + "\n").repeat(15).stripTrailing());
+
+        assertEquals(List.of("config.yml: sidebar.waiting: has more than 15 lines"), problems(yaml));
+    }
+
+    @Test
+    void theWaitingSidebarLinesAreRequired() {
+        var yaml = Yaml.bundledConfig().replaceAll("(?s)  waiting:\\n(    - .*\\n)+(?=  active:)", "");
+
+        assertEquals(List.of("config.yml: sidebar.waiting: is missing"), problems(yaml));
     }
 
     @Test

@@ -4,10 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.github.tst_038.koth.ledger.Balances;
+import io.github.tst_038.koth.restriction.Refusal;
+import io.github.tst_038.koth.schedule.ActivationEvent;
 import io.github.tst_038.koth.schedule.Window;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -25,12 +28,12 @@ class KothPlaceholdersTest {
     }
 
     private static KothStatus active() {
-        return new KothStatus(Optional.of(new Window(NOW.minusMinutes(5), NOW.plusMinutes(10))), Optional.of("Alice"), Optional.empty(), 0,
+        return new KothStatus(Optional.of(new Window(NOW.minusMinutes(5), NOW.plusMinutes(10))), Optional.empty(), Optional.of("Alice"), Optional.empty(), 0,
                 Optional.of(NOW.plusHours(2)));
     }
 
     private static KothStatus idle() {
-        return new KothStatus(Optional.empty(), Optional.empty(), Optional.empty(), 0, Optional.of(NOW.plusMinutes(90)));
+        return new KothStatus(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 0, Optional.of(NOW.plusMinutes(90)));
     }
 
     @Test
@@ -53,6 +56,22 @@ class KothPlaceholdersTest {
         assertEquals("", placeholders.resolve(Optional.empty(), "time_left"));
         assertEquals("Mon 21:30", placeholders.resolve(Optional.empty(), "next_start"));
         assertEquals("1h 30m", placeholders.resolve(Optional.empty(), "next_in"));
+    }
+
+    private static KothStatus waiting() {
+        var window = new Window(NOW.minusMinutes(5), NOW.plusMinutes(25));
+        return new KothStatus(Optional.empty(), Optional.of(new ActivationEvent.Waiting(window, new Refusal("restriction.min-online", Map.of()))),
+                Optional.empty(), Optional.empty(), 0, Optional.of(NOW.plusHours(1)));
+    }
+
+    @Test
+    void aWaitingWindowIsNotActiveAndShowsItsTimeLeft() {
+        var placeholders = over(waiting());
+
+        assertEquals("true", placeholders.resolve(Optional.empty(), "waiting"));
+        assertEquals("false", placeholders.resolve(Optional.empty(), "active"));
+        assertEquals("25m", placeholders.resolve(Optional.empty(), "time_left"));
+        assertEquals("false", over(active()).resolve(Optional.empty(), "waiting"));
     }
 
     @Test

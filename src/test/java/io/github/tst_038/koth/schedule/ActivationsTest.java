@@ -124,32 +124,55 @@ class ActivationsTest {
     }
 
     @Test
-    void aRefusedWindowIsSkippedWithTheReason() {
+    void aRefusedWindowWaitsWithTheReasonOnceAndStartsWhenPlayersArrive() {
         var activations = new Activations(plan(), at(2, 19, 59, 0));
 
-        assertEquals(List.of(new ActivationEvent.Skipped(notEnough(1))), activations.tick(at(2, 20, 0, 0), EMPTY));
+        assertEquals(List.of(new ActivationEvent.Waiting(window(2, 20, 0, 60), notEnough(1))), activations.tick(at(2, 20, 0, 0), EMPTY));
         assertEquals(Optional.empty(), activations.running());
+        assertEquals(Optional.of(new ActivationEvent.Waiting(window(2, 20, 0, 60), notEnough(1))), activations.waiting());
+        assertEquals(List.of(), run(activations, at(2, 20, 0, 0), at(2, 20, 20, 0), EMPTY));
+
+        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60))), activations.tick(at(2, 20, 20, 1), CROWDED));
+        assertEquals(Optional.of(window(2, 20, 0, 60)), activations.running());
+        assertEquals(Optional.empty(), activations.waiting());
+        assertEquals(List.of(new ActivationEvent.Ended(window(2, 20, 0, 60))), activations.tick(at(2, 21, 0, 0), EMPTY));
     }
 
     @Test
-    void aSkippedWindowIsNotRetriedWhenPlayersArrive() {
+    void theLatestRefusalIsKeptWhileWaiting() {
         var activations = new Activations(plan(), at(2, 19, 59, 0));
         activations.tick(at(2, 20, 0, 0), EMPTY);
 
-        assertEquals(List.of(), run(activations, at(2, 20, 0, 0), at(2, 21, 30, 0), CROWDED));
+        assertEquals(List.of(), activations.tick(at(2, 20, 1, 0), new Situation(2)));
+        assertEquals(Optional.of(new ActivationEvent.Waiting(window(2, 20, 0, 60), notEnough(2))), activations.waiting());
+    }
+
+    @Test
+    void aWindowThatEndsWhileWaitingIsSkippedWithTheLastRefusalAndDismissed() {
+        var dismissed = new ArrayList<LocalDateTime>();
+        var activations = new Activations(plan(), at(2, 19, 59, 0), Optional.empty(), dismissed::add);
+        activations.tick(at(2, 20, 0, 0), EMPTY);
+        activations.tick(at(2, 20, 30, 0), new Situation(2));
+
+        assertEquals(List.of(new ActivationEvent.Skipped(notEnough(2))), activations.tick(at(2, 21, 0, 0), CROWDED));
+        assertEquals(Optional.empty(), activations.waiting());
         assertEquals(Optional.empty(), activations.running());
+        assertEquals(List.of(at(2, 20, 0, 0)), dismissed);
+        assertEquals(List.of(), run(activations, at(2, 21, 0, 0), at(2, 21, 30, 0), CROWDED));
     }
 
     @Test
     void aSkippedWindowIsNotResumedByTheNextActivations() {
         var dismissed = new ArrayList<LocalDateTime>();
-        new Activations(plan(), at(2, 19, 59, 0), Optional.empty(), dismissed::add).tick(at(2, 20, 0, 0), EMPTY);
+        var activations = new Activations(plan(), at(2, 19, 59, 0), Optional.empty(), dismissed::add);
+        activations.tick(at(2, 20, 0, 0), EMPTY);
+        activations.tick(at(2, 21, 0, 0), EMPTY);
         assertEquals(List.of(at(2, 20, 0, 0)), dismissed);
 
-        // A restart in the middle of the skipped window, as it would be handed what was remembered.
-        var restarted = new Activations(plan(), at(2, 20, 30, 0), Optional.of(dismissed.getFirst()), start -> { });
+        // A restart right after the skipped window, as it would be handed what was remembered.
+        var restarted = new Activations(plan(), at(2, 20, 59, 0), Optional.of(dismissed.getFirst()), start -> { });
 
-        assertEquals(List.of(), restarted.tick(at(2, 20, 30, 1), CROWDED));
+        assertEquals(List.of(), restarted.tick(at(2, 20, 59, 1), CROWDED));
         assertEquals(Optional.empty(), restarted.running());
     }
 
@@ -181,7 +204,7 @@ class ActivationsTest {
     void theWindowAfterASkippedOneStartsNormally() {
         var activations = new Activations(plan(), at(2, 19, 59, 0));
         activations.tick(at(2, 20, 0, 0), EMPTY);
-        activations.tick(at(2, 21, 30, 0), CROWDED);
+        activations.tick(at(2, 21, 0, 0), EMPTY);
 
         assertEquals(List.of(new ActivationEvent.Started(window(3, 20, 0, 60))), activations.tick(at(3, 20, 0, 0), CROWDED));
     }
@@ -190,15 +213,57 @@ class ActivationsTest {
     void aWindowStartingTheSecondItWasCreatedStillAsksTheRestrictions() {
         var activations = new Activations(plan(), at(2, 20, 0, 0));
 
-        assertEquals(List.of(new ActivationEvent.Skipped(notEnough(1))), activations.tick(at(2, 20, 0, 0), EMPTY));
+        assertEquals(List.of(new ActivationEvent.Waiting(window(2, 20, 0, 60), notEnough(1))), activations.tick(at(2, 20, 0, 0), EMPTY));
     }
 
     @Test
-    void aWindowAlreadyOpenWhenCreatedResumesWhateverTheRestrictionsSay() {
+    void aWindowAlreadyOpenWhenCreatedWithTooFewPlayersWaits() {
         var activations = new Activations(plan(), at(2, 20, 30, 0));
 
-        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60))), activations.tick(at(2, 20, 30, 1), new Situation(0)));
+        assertEquals(List.of(new ActivationEvent.Waiting(window(2, 20, 0, 60), notEnough(0))), activations.tick(at(2, 20, 30, 1), new Situation(0)));
+        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60))), activations.tick(at(2, 20, 30, 2), CROWDED));
+    }
+
+    @Test
+    void aWindowAlreadyOpenWhenCreatedWithEnoughPlayersStartsAtOnce() {
+        var activations = new Activations(plan(), at(2, 20, 30, 0));
+
+        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60))), activations.tick(at(2, 20, 30, 1), CROWDED));
         assertEquals(List.of(new ActivationEvent.Ended(window(2, 20, 0, 60))), activations.tick(at(2, 21, 0, 0), new Situation(0)));
+    }
+
+    @Test
+    void aStartedWindowKeepsRunningWhenPlayersLeave() {
+        var activations = new Activations(plan(), at(2, 19, 59, 0));
+        activations.tick(at(2, 20, 0, 0), CROWDED);
+
+        assertEquals(List.of(), run(activations, at(2, 20, 0, 0), at(2, 20, 59, 59), EMPTY));
+        assertEquals(Optional.of(window(2, 20, 0, 60)), activations.running());
+    }
+
+    @Test
+    void forcingAStartWhileWaitingStartsItAndStopsWaiting() {
+        var activations = new Activations(plan(), at(2, 19, 59, 0));
+        activations.tick(at(2, 20, 0, 0), EMPTY);
+
+        assertEquals(Optional.of(new ActivationEvent.Started(new Window(at(2, 20, 5, 0), at(2, 21, 5, 0)))),
+                activations.forceStart(at(2, 20, 5, 0), Optional.empty()));
+        assertEquals(Optional.empty(), activations.waiting());
+        assertEquals(List.of(), activations.tick(at(2, 20, 5, 1), EMPTY));
+        assertEquals(List.of(new ActivationEvent.Ended(new Window(at(2, 20, 5, 0), at(2, 21, 5, 0)))), activations.tick(at(2, 21, 5, 0), EMPTY));
+    }
+
+    @Test
+    void stoppingWhileWaitingStopsTheWaitAndDismissesTheWindow() {
+        var dismissed = new ArrayList<LocalDateTime>();
+        var activations = new Activations(plan(), at(2, 19, 59, 0), Optional.empty(), dismissed::add);
+        activations.tick(at(2, 20, 0, 0), EMPTY);
+
+        assertEquals(Optional.of(new ActivationEvent.Cancelled(window(2, 20, 0, 60))), activations.forceStop(at(2, 20, 10, 0)));
+        assertEquals(Optional.empty(), activations.waiting());
+        assertEquals(List.of(at(2, 20, 0, 0)), dismissed);
+        assertEquals(List.of(), run(activations, at(2, 20, 10, 0), at(2, 21, 30, 0), CROWDED));
+        assertEquals(List.of(new ActivationEvent.Waiting(window(3, 20, 0, 60), notEnough(1))), activations.tick(at(3, 20, 0, 0), EMPTY));
     }
 
     @Test
@@ -292,11 +357,12 @@ class ActivationsTest {
     @Test
     void replanKeepsAHandledWindowHandled() {
         var activations = new Activations(plan(), at(2, 19, 59, 0));
-        activations.tick(at(2, 20, 0, 0), EMPTY);
+        activations.tick(at(2, 20, 0, 0), CROWDED);
+        activations.forceStop(at(2, 20, 10, 0));
 
         activations.replan(plan(60, 1, "0 20 * * *"));
 
-        assertEquals(List.of(), run(activations, at(2, 20, 0, 0), at(2, 21, 0, 0), CROWDED));
+        assertEquals(List.of(), run(activations, at(2, 20, 10, 0), at(2, 21, 0, 0), CROWDED));
     }
 
     @Test
@@ -306,7 +372,7 @@ class ActivationsTest {
         activations.replan(plan(30, 10, "0 22 * * *"));
 
         assertEquals(Optional.of(at(2, 22, 0, 0)), activations.nextStart(at(2, 21, 30, 0)));
-        assertEquals(List.of(new ActivationEvent.Skipped(new Refusal("restriction.min-online", Map.of("online", "5", "needed", "10")))),
+        assertEquals(List.of(new ActivationEvent.Waiting(window(2, 22, 0, 30), new Refusal("restriction.min-online", Map.of("online", "5", "needed", "10")))),
                 activations.tick(at(2, 22, 0, 0), CROWDED));
     }
 

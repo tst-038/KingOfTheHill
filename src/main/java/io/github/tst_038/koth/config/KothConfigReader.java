@@ -7,6 +7,8 @@ import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.koth.hill.Dye;
 import io.github.tst_038.koth.hill.Scoring;
 import io.github.tst_038.koth.schedule.Plan;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -47,18 +49,21 @@ public final class KothConfigReader {
         var scoringSection = root.section("scoring");
         var scoring = new Scoring(scoringSection.integer("points", 1, Integer.MAX_VALUE), scoringSection.integer("every-seconds", 1, MAX_SECONDS));
         var sidebar = root.section("sidebar");
-        var lines = new SidebarLines(sidebar.string("title"), sidebar.strings("inactive"), sidebar.strings("active"));
+        var lines = new SidebarLines(sidebar.string("title"), sidebar.strings("inactive"), sidebar.strings("waiting"), sidebar.strings("active"));
         // The client shows no more than 15 lines of a sidebar.
-        if (lines.inactive().size() > MAX_SIDEBAR_LINES) {
-            sidebar.problem("inactive", "has more than " + MAX_SIDEBAR_LINES + " lines");
-        }
-        if (lines.active().size() > MAX_SIDEBAR_LINES) {
-            sidebar.problem("active", "has more than " + MAX_SIDEBAR_LINES + " lines");
-        }
+        checkLineCount(sidebar, "inactive", lines.inactive());
+        checkLineCount(sidebar, "waiting", lines.waiting());
+        checkLineCount(sidebar, "active", lines.active());
 
         root.check();
         // check() passed, so nothing above went wrong and the timetable is there.
         return new KothConfig(world, spawn, respawnHere, new Plan(timetable.orElseThrow(), warnings, restrictions), point, scoring, lines);
+    }
+
+    private static void checkLineCount(ConfigReader sidebar, String key, List<String> texts) {
+        if (texts.size() > MAX_SIDEBAR_LINES) {
+            sidebar.problem(key, "has more than " + MAX_SIDEBAR_LINES + " lines");
+        }
     }
 
     private static PointSettings point(ConfigReader section, World world) {
