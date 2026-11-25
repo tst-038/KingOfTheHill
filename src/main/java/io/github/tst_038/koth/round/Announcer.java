@@ -18,7 +18,10 @@ import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-/** Tells players what KOTH is doing: the whole server hears when it starts and ends, the KOTH world who holds the hill. */
+/**
+ * Tells players what KOTH is doing: players with {@code koth.play} (and the console) hear when it starts and ends, the KOTH
+ * world who holds the hill.
+ */
 final class Announcer {
 
     /** How long a link in chat keeps working; by then the window it announced is over or long since joined. */
@@ -34,6 +37,11 @@ final class Announcer {
         this.joining = joining;
     }
 
+    /** Who hears that KOTH starts and ends: players who may play it, and the console for the log. */
+    private Audience players() {
+        return server.filterAudience(audience -> !(audience instanceof Player player) || player.hasPermission(Joining.PLAY));
+    }
+
     /** The {@code <join>} tag: a click that sends the player there at once, without the client asking to confirm a command. */
     private TagResolver join() {
         return Placeholder.styling("join", ClickEvent.callback(
@@ -46,15 +54,15 @@ final class Announcer {
     }
 
     void warning(Duration before, LocalDateTime start) {
-        messages.send(server, "announce.warning", Placeholder.unparsed("time", Durations.format(before)), Placeholder.unparsed("start", Moments.format(start)), join());
+        messages.send(players(), "announce.warning", Placeholder.unparsed("time", Durations.format(before)), Placeholder.unparsed("start", Moments.format(start)), join());
     }
 
     void started(Window window) {
-        messages.send(server, "announce.started", Placeholder.unparsed("end", Moments.format(window.end())), join());
+        messages.send(players(), "announce.started", Placeholder.unparsed("end", Moments.format(window.end())), join());
     }
 
     void waiting(Window window, Refusal refusal) {
-        messages.send(server, "announce.waiting", Placeholder.component("reason", StatusResolver.reason(messages, refusal)),
+        messages.send(players(), "announce.waiting", Placeholder.component("reason", StatusResolver.reason(messages, refusal)),
                 Placeholder.unparsed("end", Moments.format(window.end())));
     }
 
@@ -64,7 +72,7 @@ final class Announcer {
     }
 
     void ended() {
-        messages.send(server, "announce.ended");
+        messages.send(players(), "announce.ended");
     }
 
     void captured(World world, String player) {

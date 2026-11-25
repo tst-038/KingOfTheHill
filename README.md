@@ -200,7 +200,7 @@ lower-case letters, digits, `_` and `-`.
 
 | Permission | Default | |
 |---|---|---|
-| `koth.play` | everyone | `/koth`, the shop, your points, and going to and leaving the KOTH world |
+| `koth.play` | everyone | hearing when KOTH starts and ends, `/koth`, the shop, your points, and going to and leaving the KOTH world |
 | `koth.admin` | op | `/kotha`: reload, start and stop, sending players out, giving and taking points, setting up, and editing the shop |
 | `minigami.ban` (MiniGami's) | op | Ban players from KOTH with `/mga ban <players> koth` |
 
