@@ -110,6 +110,12 @@ given on purchase:
 - `{ saved: <name>, amount, name }`, an item saved in MiniGami with `/mga loot save <name>`, such as a crate key;
 - `{ command: "...", name: "..." }`, run from the console, with `%player%` being the buyer.
 
+The `icon` is either `{ item: <item>, name, lore }`, with the `name` required, or `{ saved: <name>, name, lore }`, an
+item saved in MiniGami with `/mga loot save <name>`. A saved icon shows the item as saved; give a `name` or `lore` to
+replace the saved ones. Give one of `item` and `saved`, not both. The shop adds the cost line, and the owned line, under
+the item's own lore. If the saved item is deleted after the shop was read, the entry shows a barrier and a warning is
+logged each time the shop is opened.
+
 An entry with `owned-permission` can't be bought again by someone who has that permission. Points are taken first,
 and given back if the rewards can't be delivered. Run `/kotha reload` after editing.
 

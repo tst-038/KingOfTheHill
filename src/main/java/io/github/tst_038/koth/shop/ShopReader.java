@@ -3,6 +3,7 @@ package io.github.tst_038.koth.shop;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
+import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.reward.Reward;
 import io.github.tst_038.minigami.api.reward.RewardReader;
 import io.github.tst_038.koth.config.KothFiles;
@@ -24,7 +25,7 @@ public final class ShopReader {
     }
 
     /** Turns the text of {@code shop.yml} into a {@link Shop}, or into the problems that stop it. */
-    public static Loaded load(String yaml, RewardReader rewards) {
+    public static Loaded load(String yaml, RewardReader rewards, MiniGamiSavedItems savedItems) {
         var section = new YamlConfiguration();
         try {
             section.loadFromString(yaml);
@@ -32,7 +33,7 @@ public final class ShopReader {
             return new Loaded(Optional.empty(), List.of(new ConfigProblem(KothFiles.SHOP, "", "can't be read: " + e.getMessage())));
         }
         var root = ConfigReader.of(KothFiles.SHOP, section);
-        var shop = read(root, rewards);
+        var shop = read(root, rewards, savedItems);
         try {
             root.check();
             return new Loaded(Optional.of(shop), List.of());
@@ -42,7 +43,7 @@ public final class ShopReader {
     }
 
     /** Problems are collected in the reader, so the caller ends with {@link ConfigReader#check()}. */
-    public static Shop read(ConfigReader root, RewardReader rewards) {
+    public static Shop read(ConfigReader root, RewardReader rewards, MiniGamiSavedItems savedItems) {
         var title = root.string("title");
         int rows = root.integer("rows", 1, 6);
         var section = root.section("entries");
@@ -50,7 +51,7 @@ public final class ShopReader {
         var slots = new HashSet<Integer>();
         for (String id : section.keys()) {
             var reader = section.section(id);
-            var entry = entry(id, reader, rows, rewards);
+            var entry = entry(id, reader, rows, rewards, savedItems);
             if (!slots.add(entry.slot())) {
                 reader.problem("slot", "is used by another entry");
             }
@@ -62,13 +63,10 @@ public final class ShopReader {
         return new Shop(title, rows, entries);
     }
 
-    private static ShopEntry entry(String id, ConfigReader entry, int rows, RewardReader rewards) {
+    private static ShopEntry entry(String id, ConfigReader entry, int rows, RewardReader rewards, MiniGamiSavedItems savedItems) {
         int slot = entry.integer("slot", 0, rows * 9 - 1);
         int cost = entry.integer("cost", 1, Integer.MAX_VALUE);
-        var icon = entry.section("icon");
-        var material = icon.material("item");
-        var name = icon.string("name");
-        var lore = icon.has("lore") ? icon.strings("lore") : List.<String>of();
+        var icon = icon(entry.section("icon"), savedItems);
         var given = new ArrayList<Reward>();
         for (ConfigReader reward : entry.sections("rewards")) {
             rewards.reward(reward).ifPresent(given::add);
@@ -77,6 +75,26 @@ public final class ShopReader {
             entry.problem("rewards", "needs at least one reward");
         }
         var owned = entry.has("owned-permission") ? Optional.of(entry.string("owned-permission")) : Optional.<String>empty();
-        return new ShopEntry(id, slot, cost, material, name, lore, given, owned);
+        return new ShopEntry(id, slot, cost, icon, given, owned);
+    }
+
+    /** {@code { item, name, lore }} or {@code { saved, name?, lore? }}; exactly one of {@code item} and {@code saved}. */
+    private static ShopEntry.Icon icon(ConfigReader icon, MiniGamiSavedItems savedItems) {
+        if (icon.has("saved")) {
+            var saved = icon.string("saved");
+            if (icon.has("item")) {
+                icon.string("item");
+                icon.problem("saved", "can't be given together with item; an icon is one or the other");
+            } else if (!saved.isEmpty() && !savedItems.has(saved)) {
+                icon.problem("saved", "no saved item '" + saved + "'; save the item you hold with /mga loot save " + saved);
+            }
+            var name = icon.has("name") ? Optional.of(icon.string("name")) : Optional.<String>empty();
+            var lore = icon.has("lore") ? Optional.of(icon.strings("lore")) : Optional.<List<String>>empty();
+            return new ShopEntry.Icon.Saved(saved, name, lore);
+        }
+        var material = icon.material("item");
+        var name = icon.string("name");
+        var lore = icon.has("lore") ? icon.strings("lore") : List.<String>of();
+        return new ShopEntry.Icon.Plain(material, name, lore);
     }
 }

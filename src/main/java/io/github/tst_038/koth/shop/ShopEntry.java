@@ -10,15 +10,49 @@ import org.bukkit.Material;
  *
  * @param slot where its icon sits in the menu
  * @param cost in points, at least 1
- * @param name the icon's name, as MiniMessage text; also what the buyer is told they bought
- * @param lore the icon's extra lines, as MiniMessage text
+ * @param icon what the menu shows for it
  * @param rewards all of them are given on a purchase
  * @param ownedPermission whoever has it already can't buy the entry again
  */
-public record ShopEntry(String id, int slot, int cost, Material icon, String name, List<String> lore, List<Reward> rewards, Optional<String> ownedPermission) {
+public record ShopEntry(String id, int slot, int cost, Icon icon, List<Reward> rewards, Optional<String> ownedPermission) {
 
     public ShopEntry {
-        lore = List.copyOf(lore);
         rewards = List.copyOf(rewards);
+    }
+
+    /** The icon's name, as MiniMessage text; also what the buyer is told they bought. */
+    public String name() {
+        return icon.name();
+    }
+
+    /** What an entry looks like in the menu. */
+    public sealed interface Icon {
+
+        /** MiniMessage text. */
+        String name();
+
+        /** A plain item with its own name and extra lines, as MiniMessage text. */
+        record Plain(Material material, String name, List<String> lore) implements Icon {
+
+            public Plain {
+                lore = List.copyOf(lore);
+            }
+        }
+
+        /**
+         * An item saved in MiniGami, shown with the name and extra lines it was saved with unless these replace them.
+         * Where there is no name override, the buyer is told the saved name.
+         */
+        record Saved(String saved, Optional<String> nameOverride, Optional<List<String>> loreOverride) implements Icon {
+
+            public Saved {
+                loreOverride = loreOverride.map(List::copyOf);
+            }
+
+            @Override
+            public String name() {
+                return nameOverride.orElse(saved);
+            }
+        }
     }
 }

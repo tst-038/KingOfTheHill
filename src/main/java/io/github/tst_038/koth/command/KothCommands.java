@@ -7,6 +7,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.koth.ledger.Wallet;
@@ -60,19 +61,21 @@ public final class KothCommands {
     private final Wallet wallet;
     private final MiniGamiPlayers players;
     private final Supplier<Shop> shop;
+    private final MiniGamiSavedItems savedItems;
     private final Consumer<Audience> reload;
     private final Clock clock;
     private final Executor serverThread;
     private final Logger logger;
 
     public KothCommands(Server server, Messages messages, KothRuntime runtime, Wallet wallet, MiniGamiPlayers players, Supplier<Shop> shop,
-            Consumer<Audience> reload, Clock clock, Executor serverThread, Logger logger) {
+            MiniGamiSavedItems savedItems, Consumer<Audience> reload, Clock clock, Executor serverThread, Logger logger) {
         this.server = server;
         this.messages = messages;
         this.runtime = runtime;
         this.wallet = wallet;
         this.players = players;
         this.shop = shop;
+        this.savedItems = savedItems;
         this.reload = reload;
         this.clock = clock;
         this.serverThread = serverThread;
@@ -132,7 +135,7 @@ public final class KothCommands {
         } else if (players.isInMatch(player.getUniqueId())) {
             messages.send(player, "shop.in-match");
         } else {
-            player.openInventory(ShopMenu.create(current, player, messages));
+            player.openInventory(ShopMenu.create(current, player, messages, savedItems, logger));
         }
     }
 

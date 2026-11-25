@@ -3,6 +3,7 @@ package io.github.tst_038.koth.shop;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.reward.RewardReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 
 class ShopReaderTest {
@@ -25,10 +27,21 @@ class ShopReaderTest {
                 rewards: %s
             """;
 
+    private final MiniGamiSavedItems saved = new MiniGamiSavedItems() {
+        @Override
+        public Optional<ItemStack> find(String name) {
+            return Optional.empty();
+        }
+
+        @Override
+        public boolean has(String name) {
+            return name.equals("koth-crate-key");
+        }
+    };
     private final RewardReader rewards = new RewardReader(name -> Optional.empty());
 
     private ShopReader.Loaded load(String yaml) {
-        return ShopReader.load(yaml, rewards);
+        return ShopReader.load(yaml, rewards, saved);
     }
 
     private List<String> problems(String yaml) {
@@ -52,7 +65,7 @@ class ShopReaderTest {
     void anEntryIsFoundByItsSlot() {
         var shop = load(ENTRY.formatted(3, "[ { item: diamond } ]")).shop().orElseThrow();
 
-        assertEquals(Material.DIAMOND, shop.at(3).orElseThrow().icon());
+        assertEquals(Material.DIAMOND, ((ShopEntry.Icon.Plain) shop.at(3).orElseThrow().icon()).material());
         assertEquals(5, shop.at(3).orElseThrow().cost());
         assertTrue(shop.at(4).isEmpty());
     }
@@ -92,5 +105,55 @@ class ShopReaderTest {
         var shop = load(ENTRY.formatted(0, "[ { item: diamond } ]")).shop().orElseThrow();
 
         assertEquals(Optional.empty(), shop.at(0).orElseThrow().ownedPermission());
+    }
+
+    private static final String ICON = """
+            title: "Shop"
+            rows: 1
+            entries:
+              a:
+                slot: 0
+                cost: 5
+                icon: %s
+                rewards: [ { item: diamond } ]
+            """;
+
+    private ShopEntry.Icon icon(String icon) {
+        return load(ICON.formatted(icon)).shop().orElseThrow().at(0).orElseThrow().icon();
+    }
+
+    @Test
+    void aPlainIconHasAnItemANameAndLore() {
+        assertEquals(new ShopEntry.Icon.Plain(Material.ANVIL, "Anvil", List.of("a")), icon("{ item: anvil, name: Anvil, lore: [a] }"));
+    }
+
+    @Test
+    void aSavedIconNeedsNoNameOrLore() {
+        assertEquals(new ShopEntry.Icon.Saved("koth-crate-key", Optional.empty(), Optional.empty()), icon("{ saved: koth-crate-key }"));
+    }
+
+    @Test
+    void aSavedIconMayReplaceTheNameAndLore() {
+        assertEquals(new ShopEntry.Icon.Saved("koth-crate-key", Optional.of("Key"), Optional.of(List.of("a"))),
+                icon("{ saved: koth-crate-key, name: Key, lore: [a] }"));
+    }
+
+    @Test
+    void anIconWithBothItemAndSavedIsAProblem() {
+        assertEquals(List.of("shop.yml: entries.a.icon.saved: can't be given together with item; an icon is one or the other"),
+                problems(ICON.formatted("{ item: anvil, name: Anvil, saved: koth-crate-key }")));
+    }
+
+    @Test
+    void aSavedIconThatIsNotSavedIsAProblem() {
+        var problems = problems(ICON.formatted("{ saved: gone }"));
+
+        assertEquals(1, problems.size());
+        assertTrue(problems.getFirst().startsWith("shop.yml: entries.a.icon.saved: no saved item 'gone'"), problems.getFirst());
+    }
+
+    @Test
+    void anIconWithNeitherItemNorSavedIsAProblem() {
+        assertEquals(List.of("shop.yml: entries.a.icon.item: is missing"), problems(ICON.formatted("{ name: Anvil }")));
     }
 }

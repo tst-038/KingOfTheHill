@@ -56,6 +56,7 @@ public final class KothPlugin extends JavaPlugin {
     private KothRuntime runtime;
     private KothSidebar sidebar;
     private RewardReader rewards;
+    private MiniGamiSavedItems savedItems;
     /** Takes our PlaceholderAPI expansion away; does nothing when PlaceholderAPI isn't there. */
     private Runnable unregisterPlaceholders = () -> { };
     private volatile Shop shop = Shop.NONE;
@@ -68,7 +69,7 @@ public final class KothPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         MiniGamiStats stats = service(MiniGamiStats.class);
-        MiniGamiSavedItems savedItems = service(MiniGamiSavedItems.class);
+        savedItems = service(MiniGamiSavedItems.class);
         MiniGamiPlayers players = service(MiniGamiPlayers.class);
         if (stats == null || savedItems == null || players == null) {
             getServer().getPluginManager().disablePlugin(this);
@@ -102,7 +103,7 @@ public final class KothPlugin extends JavaPlugin {
             runtime.second();
             sidebar.update(runtime.config(), runtime.status());
         }, 20, 20);
-        var commands = new KothCommands(getServer(), messages, runtime, wallet, players, this::shop, requester -> loadConfig(files, messages, requester), clock, serverThread, getLogger());
+        var commands = new KothCommands(getServer(), messages, runtime, wallet, players, this::shop, savedItems, requester -> loadConfig(files, messages, requester), clock, serverThread, getLogger());
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(commands.playerRoot(), "King of the Hill: status, shop, points and going there");
             event.registrar().register(commands.adminRoot(), "Manage King of the Hill");
@@ -139,7 +140,7 @@ public final class KothPlugin extends JavaPlugin {
                 var loaded = KothConfigLoader.load(configText, new KothWorld(getServer()));
                 problems.addAll(loaded.problems());
                 loaded.config().ifPresent(config -> runtime.configure(config, dismissed));
-                var loadedShop = ShopReader.load(shopText, rewards);
+                var loadedShop = ShopReader.load(shopText, rewards, savedItems);
                 problems.addAll(loadedShop.problems());
                 loadedShop.shop().ifPresent(read -> shop = read);
                 problems.forEach(problem -> getLogger().warning(problem.toString()));

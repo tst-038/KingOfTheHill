@@ -113,7 +113,7 @@ class CheckoutTest {
     }
 
     private ShopEntry entry(int cost, Reward... rewards) {
-        return new ShopEntry("thing", 0, cost, Material.DIAMOND, "Thing", List.of(), List.of(rewards), Optional.of("owned.thing"));
+        return new ShopEntry("thing", 0, cost, new ShopEntry.Icon.Plain(Material.DIAMOND, "Thing", List.of()), List.of(rewards), Optional.of("owned.thing"));
     }
 
     /** Storage keeps the order, so once the second read is back, everything the first one set going has run. */
