@@ -99,11 +99,13 @@ public final class KothSetup {
             return Optional.empty();
         }
         var point = current.get().point();
-        var region = box == Box.POINT ? Optional.of(point.region()) : point.colourBlocks();
-        if (region.isEmpty()) {
-            messages.send(player, "setup.no-box", name(box));
+        if (box == Box.POINT) {
+            return Optional.of(point.region());
         }
-        return region;
+        if (point.colourBlocks().isEmpty()) {
+            messages.send(player, "setup.default-colours");
+        }
+        return Optional.of(point.colourBox());
     }
 
     /** Writes the change if the player is in the file's KOTH world, and only if the file is usable afterwards. */

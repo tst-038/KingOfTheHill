@@ -2,6 +2,7 @@ package io.github.tst_038.koth.round;
 
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
+import io.github.tst_038.minigami.api.region.DyedBlocks;
 import io.github.tst_038.minigami.api.stat.MiniGamiStats;
 import io.github.tst_038.koth.config.KothConfig;
 import io.github.tst_038.koth.hill.Hill;
@@ -64,7 +65,8 @@ public final class KothRuntime {
     }
 
     /**
-     * Uses a freshly read config from now on; a round that is running carries on with its own.
+     * Uses a freshly read config from now on; a round that is running carries on with its own. With no round running,
+     * the colour box is painted neutral once, so blocks left coloured by a crash mid-round come right.
      *
      * @param dismissedBefore the start of the window last skipped or stopped, so the first config doesn't start it again
      */
@@ -74,6 +76,9 @@ public final class KothRuntime {
             activations = new Activations(config.plan(), LocalDateTime.now(clock), dismissedBefore, onDismissed);
         } else {
             activations.replan(config.plan());
+        }
+        if (round == null) {
+            DyedBlocks.scan(config.point().colourBox(), DyedBlocks.DYED).paint(config.point().neutral());
         }
     }
 

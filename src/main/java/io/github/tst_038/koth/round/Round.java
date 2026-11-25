@@ -1,12 +1,13 @@
 package io.github.tst_038.koth.round;
 
-import io.github.tst_038.koth.hill.Dye;
 import io.github.tst_038.koth.hill.Hill;
 import io.github.tst_038.koth.stats.KothStats;
 import io.github.tst_038.koth.stats.StatBuffer;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
+import org.bukkit.DyeColor;
 
 /**
  * One run of KOTH: the hill, what happens on it each second, and the points and stats it brings. It knows the
@@ -15,14 +16,14 @@ import java.util.random.RandomGenerator;
 final class Round {
 
     private final Hill hill;
-    private final Dye neutral;
+    private final DyeColor neutral;
     private final Ground ground;
     private final StatBuffer stats;
     private final RandomGenerator random;
-    private Optional<Dye> colour = Optional.empty();
+    private Optional<DyeColor> colour = Optional.empty();
     private Optional<String> holderName = Optional.empty();
 
-    Round(Hill hill, Dye neutral, Ground ground, StatBuffer stats, RandomGenerator random) {
+    Round(Hill hill, DyeColor neutral, Ground ground, StatBuffer stats, RandomGenerator random) {
         this.hill = hill;
         this.neutral = neutral;
         this.ground = ground;
@@ -47,7 +48,7 @@ final class Round {
         tick.captured().ifPresent(player -> {
             var name = ground.nameOf(player);
             holderName = Optional.of(name);
-            var dye = Dye.randomOther(colour, random);
+            var dye = randomOther(colour, random);
             colour = Optional.of(dye);
             ground.paint(dye);
             ground.captured(name);
@@ -61,6 +62,12 @@ final class Round {
 
     void end() {
         ground.paint(neutral);
+    }
+
+    /** A random colour other than {@code current}; any colour when there is none. */
+    static DyeColor randomOther(Optional<DyeColor> current, RandomGenerator random) {
+        var others = Arrays.stream(DyeColor.values()).filter(dye -> !current.equals(Optional.of(dye))).toList();
+        return others.get(random.nextInt(others.size()));
     }
 
     Optional<UUID> holder() {

@@ -3,19 +3,21 @@ package io.github.tst_038.koth.round;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import io.github.tst_038.koth.hill.Dye;
 import io.github.tst_038.koth.hill.Hill;
 import io.github.tst_038.koth.hill.Scoring;
 import io.github.tst_038.koth.stats.KothStats;
 import io.github.tst_038.koth.stats.StatBuffer;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
+import org.bukkit.DyeColor;
 import org.junit.jupiter.api.Test;
 
 class RoundTest {
@@ -28,7 +30,7 @@ class RoundTest {
         List<UUID> onPoint = List.of();
         final Set<UUID> here = new HashSet<>(Set.of(ALICE, BOB));
         final List<String> told = new ArrayList<>();
-        final List<Dye> painted = new ArrayList<>();
+        final List<DyeColor> painted = new ArrayList<>();
         long credited;
 
         @Override
@@ -47,7 +49,7 @@ class RoundTest {
         }
 
         @Override
-        public void paint(Dye dye) {
+        public void paint(DyeColor dye) {
             painted.add(dye);
         }
 
@@ -69,7 +71,7 @@ class RoundTest {
 
     private final FakeGround ground = new FakeGround();
     private final StatBuffer stats = new StatBuffer();
-    private final Round round = new Round(new Hill(2, new Scoring(3, 1)), Dye.WHITE, ground, stats, RandomGenerator.getDefault());
+    private final Round round = new Round(new Hill(2, new Scoring(3, 1)), DyeColor.WHITE, ground, stats, RandomGenerator.getDefault());
 
     private void seconds(int count) {
         for (int i = 0; i < count; i++) {
@@ -82,7 +84,7 @@ class RoundTest {
         round.begin();
         round.end();
 
-        assertEquals(List.of(Dye.WHITE, Dye.WHITE), ground.painted);
+        assertEquals(List.of(DyeColor.WHITE, DyeColor.WHITE), ground.painted);
     }
 
     @Test
@@ -131,6 +133,24 @@ class RoundTest {
         assertEquals(List.of("captured Alice", "dropped Alice"), ground.told);
         assertEquals(0, ground.credited);
         assertEquals(2, ground.painted.size());
-        assertEquals(Dye.WHITE, ground.painted.get(1));
+        assertEquals(DyeColor.WHITE, ground.painted.get(1));
+    }
+
+    @Test
+    void aRandomOtherColourIsNeverTheCurrentOne() {
+        var random = new Random(1);
+        for (int i = 0; i < 200; i++) {
+            assertNotEquals(DyeColor.RED, Round.randomOther(Optional.of(DyeColor.RED), random));
+        }
+    }
+
+    @Test
+    void withNoCurrentColourEveryColourCanCome() {
+        var random = new Random(1);
+        var seen = EnumSet.noneOf(DyeColor.class);
+        for (int i = 0; i < 500; i++) {
+            seen.add(Round.randomOther(Optional.empty(), random));
+        }
+        assertEquals(DyeColor.values().length, seen.size());
     }
 }

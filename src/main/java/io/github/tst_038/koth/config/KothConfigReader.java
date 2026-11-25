@@ -4,12 +4,12 @@ import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.region.Region;
-import io.github.tst_038.koth.hill.Dye;
 import io.github.tst_038.koth.hill.Scoring;
 import io.github.tst_038.koth.schedule.Plan;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 
@@ -18,8 +18,11 @@ public final class KothConfigReader {
 
     /** The most blocks the hill may cover. */
     static final int MAX_POINT_BLOCKS = 4096;
-    /** The most blocks the colour box may cover; it is scanned and repainted on every capture. */
-    static final int MAX_COLOUR_BLOCKS = 32_768;
+    /**
+     * The most blocks the colour box may cover, such as 128 by 64 by 128. It is scanned in one go on the server thread at
+     * each round start and load, so a mistyped corner must not stall the server for seconds.
+     */
+    static final int MAX_COLOUR_BLOCKS = 1_048_576;
     private static final int MAX_SECONDS = 3600;
     private static final int MAX_SIDEBAR_LINES = 15;
 
@@ -72,7 +75,7 @@ public final class KothConfigReader {
         var colourBlocks = section.has("colour-blocks")
                 ? Optional.of(box(section, "colour-blocks", world, MAX_COLOUR_BLOCKS))
                 : Optional.<Region>empty();
-        var neutral = section.has("neutral-colour") ? section.choice("neutral-colour", Dye.class) : Dye.WHITE;
+        var neutral = section.has("neutral-colour") ? section.choice("neutral-colour", DyeColor.class) : DyeColor.WHITE;
         return new PointSettings(region, captureSeconds, colourBlocks, neutral);
     }
 

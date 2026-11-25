@@ -1,21 +1,25 @@
 package io.github.tst_038.koth.round;
 
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
+import io.github.tst_038.minigami.api.region.DyedBlocks;
 import io.github.tst_038.koth.config.KothConfig;
-import io.github.tst_038.koth.hill.Dye;
 import io.github.tst_038.koth.ledger.Wallet;
 import java.util.List;
 import java.util.UUID;
+import org.bukkit.DyeColor;
 import org.bukkit.Server;
 import org.bukkit.World;
 
-/** The {@link Ground} of a running round: the KOTH world as the server has it. Server thread only. */
+/**
+ * The {@link Ground} of a running round: the KOTH world as the server has it. Made when a round starts, it finds the dyed
+ * blocks of the colour box then and keeps them for the round. Server thread only.
+ */
 final class WorldGround implements Ground {
 
     private final Server server;
     private final World world;
     private final PointWatcher watcher;
-    private final PointColours colours;
+    private final DyedBlocks colours;
     private final Announcer announcer;
     private final Wallet wallet;
     private final MiniGamiPlayers players;
@@ -24,7 +28,7 @@ final class WorldGround implements Ground {
         this.server = server;
         this.world = config.world();
         this.watcher = new PointWatcher(config.point().region(), players);
-        this.colours = new PointColours(config.point().colourBlocks());
+        this.colours = DyedBlocks.scan(config.point().colourBox(), DyedBlocks.DYED);
         this.announcer = announcer;
         this.wallet = wallet;
         this.players = players;
@@ -52,7 +56,7 @@ final class WorldGround implements Ground {
     }
 
     @Override
-    public void paint(Dye dye) {
+    public void paint(DyeColor dye) {
         colours.paint(dye);
     }
 

@@ -42,9 +42,9 @@ Players who are in a MiniGami match can't join KOTH, shop or receive purchases; 
 2. In `config.yml`, set `world.name` and run `/kotha reload`. Problems are listed in chat and in the log. A file with
    problems isn't used, and the previous one stays in use.
 3. In the KOTH world, select the hill with WorldEdit and run `/kotha setup point set`; likewise `/kotha setup colours set`
-   for the blocks that change colour, if you want them. Stand where `/koth join` should put players and run
-   `/kotha setup spawn`. Each command writes `config.yml`, keeping its comments, and reloads. A change that would give
-   the file problems, such as a hill that is too big, isn't written. You can also set `point.region`,
+   for the box whose dyed blocks change colour, if the hill and the layer under it (the default) aren't what you want.
+   Stand where `/koth join` should put players and run `/kotha setup spawn`. Each command writes `config.yml`, keeping
+   its comments, and reloads. A change that would give the file problems, such as a hill that is too big, isn't written. You can also set `point.region`,
    `point.colour-blocks` and `world.spawn` in the file by hand and run `/kotha reload`.
 4. Try it with `/kotha start 5` (a five minute round, whatever the timetable and restrictions say), and `/kotha stop`.
 
@@ -54,7 +54,7 @@ Players who are in a MiniGami match can't join KOTH, shop or receive purchases; 
 |---|---|
 | `world` | The `name` of the world, the `spawn` for `/koth join` (left out: the world's spawn), and `respawn-here`: players who die in the world come back at that spawn |
 | `schedule` | When it runs, as `cron` or `cycle` (see below), and `warn-minutes`: chat warnings that long before a start |
-| `point` | The hill's `region`, `capture-seconds` to take it, and optional `colour-blocks` that change colour on each capture |
+| `point` | The hill's `region`, `capture-seconds` to take it, `colour-blocks`, a box whose dyed blocks change colour on each capture (left out: the hill and the layer under it), and `neutral-colour` for while nobody holds the hill and KOTH isn't running |
 | `scoring` | `points` for the holder every `every-seconds`, wherever they are in the world |
 | `restrictions` | `min-online`: a window waits, with an announcement, while fewer players are online, and starts as soon as there are enough; one that ends first is skipped. A forced start ignores it |
 | `sidebar` | The title and lines shown to players in the KOTH world, for when it runs, when it waits for players and when it doesn't. It goes through MiniGami's boards, so a match's sidebar comes first and players get their own board back on leaving the world |

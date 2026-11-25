@@ -33,8 +33,10 @@ point:
   # The hill: who stands on it alone for capture-seconds takes it, and keeps it until someone else does.
   region: { from: { x: -2, y: 64, z: -2 }, to: { x: 2, y: 66, z: 2 } }
   capture-seconds: 5
-  # Optional: the wool, carpet, stained glass (and panes), concrete (and powder) and terracotta in this box
-  # turn a random colour on each capture, and neutral-colour while KOTH isn't running. Stained glass over a beacon colours its beam.
+  # The wool, carpet, stained glass (and panes), concrete (and powder) and terracotta in this box turn a random colour
+  # on each capture, and neutral-colour while KOTH isn't running. Stained glass over a beacon colours its beam.
+  # The box is looked at when a round starts; blocks placed during a round don't change colour until the next one.
+  # Optional, at most 1048576 blocks; left out, it is the hill and the layer of blocks right under it.
   colour-blocks: { from: { x: -2, y: 60, z: -2 }, to: { x: 2, y: 63, z: 2 } }
   neutral-colour: white
 

@@ -1,8 +1,8 @@
 package io.github.tst_038.koth.round;
 
-import io.github.tst_038.koth.hill.Dye;
 import java.util.List;
 import java.util.UUID;
+import org.bukkit.DyeColor;
 
 /** What a {@link Round} sees and does in the world, so its rules need no server. Server thread only. */
 interface Ground {
@@ -15,8 +15,8 @@ interface Ground {
 
     String nameOf(UUID player);
 
-    /** Colours the dyed blocks of the hill. */
-    void paint(Dye dye);
+    /** Colours the dyed blocks the colour box had when the round started; blocks placed since are left alone. */
+    void paint(DyeColor dye);
 
     /** Tells the world that the player took the hill. */
     void captured(String player);

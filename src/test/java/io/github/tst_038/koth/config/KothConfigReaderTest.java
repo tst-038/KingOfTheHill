@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
-import io.github.tst_038.koth.hill.Dye;
 import io.github.tst_038.koth.hill.Scoring;
 import io.github.tst_038.koth.restriction.MinOnline;
 import io.github.tst_038.koth.schedule.CycleTimetable;
@@ -15,6 +14,7 @@ import java.lang.reflect.Proxy;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import org.bukkit.DyeColor;
 import org.bukkit.World;
 import org.junit.jupiter.api.Test;
 
@@ -53,7 +53,7 @@ class KothConfigReaderTest {
         assertEquals(5, config.point().captureSeconds());
         assertSame(world, config.point().region().world());
         assertTrue(config.point().colourBlocks().isPresent());
-        assertEquals(Dye.WHITE, config.point().neutral());
+        assertEquals(DyeColor.WHITE, config.point().neutral());
         assertEquals(new Scoring(1, 1), config.scoring());
         assertEquals(List.of(new MinOnline(3)), config.plan().restrictions());
         assertEquals(List.of(Duration.ofMinutes(60), Duration.ofMinutes(15), Duration.ofMinutes(2)), config.plan().warnings());
@@ -88,9 +88,9 @@ class KothConfigReaderTest {
     @Test
     void aColourBoxOverTheCapIsAProblem() {
         var yaml = bundledWith("colour-blocks: { from: { x: -2, y: 60, z: -2 }, to: { x: 2, y: 63, z: 2 } }",
-                "colour-blocks: { from: { x: 0, y: 0, z: 0 }, to: { x: 40, y: 40, z: 40 } }");
+                "colour-blocks: { from: { x: 0, y: 0, z: 0 }, to: { x: 127, y: 64, z: 127 } }");
 
-        assertEquals(List.of("config.yml: point.colour-blocks: covers more than 32768 blocks"), problems(yaml));
+        assertEquals(List.of("config.yml: point.colour-blocks: covers more than 1048576 blocks"), problems(yaml));
     }
 
     @Test
@@ -110,12 +110,28 @@ class KothConfigReaderTest {
         var point = read(yaml).point();
 
         assertEquals(Optional.empty(), point.colourBlocks());
-        assertEquals(Dye.WHITE, point.neutral());
+        assertEquals(DyeColor.WHITE, point.neutral());
+    }
+
+    @Test
+    void withoutAColourBoxTheHillAndTheLayerUnderItChangeColour() throws Exception {
+        var point = read(Yaml.bundledConfig().replaceAll("(?m)^  colour-blocks:.*\\n", "")).point();
+
+        var box = point.colourBox();
+        assertEquals(List.of(-2, 63, -2, 2, 66, 2), List.of(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ()));
+        assertSame(world, box.world());
+    }
+
+    @Test
+    void aColourBoxThatIsSetIsTheOneInUse() throws Exception {
+        var point = read(Yaml.bundledConfig()).point();
+
+        assertEquals(point.colourBlocks().orElseThrow(), point.colourBox());
     }
 
     @Test
     void theNeutralColourIsReadByName() throws Exception {
-        assertEquals(Dye.LIGHT_BLUE, read(bundledWith("neutral-colour: white", "neutral-colour: light-blue")).point().neutral());
+        assertEquals(DyeColor.LIGHT_BLUE, read(bundledWith("neutral-colour: white", "neutral-colour: light-blue")).point().neutral());
     }
 
     @Test

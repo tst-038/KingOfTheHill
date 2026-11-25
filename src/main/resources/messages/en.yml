@@ -76,7 +76,7 @@ setup:
   # %world%: the KOTH world
   wrong-world: "%prefix%<red>Do that in the KOTH world, <white>%world%</white>."
   not-loaded: "%prefix%<red>config.yml isn't in use, so there is nothing to select or show; see /kotha reload."
-  no-box: "%prefix%<red>config.yml has no %box%."
+  default-colours: "%prefix%<gray>config.yml sets no colour box, so it is the hill and the layer under it."
   box-set: "%prefix%<green>Saved %box% in config.yml."
   box-selected: "%prefix%<green>Selected %box% with WorldEdit."
   # %seconds%
