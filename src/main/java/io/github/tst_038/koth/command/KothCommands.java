@@ -1,5 +1,6 @@
 package io.github.tst_038.koth.command;
 
+import io.github.tst_038.koth.text.Numbers;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
@@ -180,7 +181,7 @@ public final class KothCommands {
         var id = player.getUniqueId();
         var cached = wallet.balances().of(id);
         if (cached.isPresent()) {
-            messages.send(player, "balance.own", Placeholder.unparsed("points", String.valueOf(cached.getAsLong())));
+            messages.send(player, "balance.own", Placeholder.unparsed("points", Numbers.format(cached.getAsLong())));
         } else {
             // Not read yet, as just after joining; ask again.
             wallet.load(id);
@@ -242,7 +243,7 @@ public final class KothCommands {
                 messages.send(sender, "admin.storage-failed");
             } else {
                 messages.send(sender, what.message, Placeholder.unparsed("player", target.getName() != null ? target.getName() : name),
-                        Placeholder.unparsed("amount", String.valueOf(amount)), Placeholder.unparsed("points", String.valueOf(points)));
+                        Placeholder.unparsed("amount", Numbers.format(amount)), Placeholder.unparsed("points", Numbers.format(points)));
             }
         }, serverThread);
         return Command.SINGLE_SUCCESS;

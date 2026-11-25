@@ -1,5 +1,6 @@
 package io.github.tst_038.koth.shop;
 
+import io.github.tst_038.koth.text.Numbers;
 import io.github.tst_038.koth.config.FileEdits;
 import io.github.tst_038.koth.config.KothFiles;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
@@ -105,7 +106,7 @@ public final class ShopEditor {
 
     public void cost(Audience sender, String id, int cost) {
         edits.editAndReload(sender, KothFiles.SHOP, file -> ShopFile.cost(file, id, cost), "shop-edit.cost-set",
-                Placeholder.unparsed("id", id), Placeholder.unparsed("cost", String.valueOf(cost)));
+                Placeholder.unparsed("id", id), Placeholder.unparsed("cost", Numbers.format(cost)));
     }
 
     /** Raises the cost by {@code change}, or lowers it, though not below 1; counted from the file, so quick clicks add up. */
@@ -113,7 +114,7 @@ public final class ShopEditor {
         var cost = new AtomicInteger();
         edits.edit(sender, KothFiles.SHOP, file -> cost.set(ShopFile.addCost(file, id, change)), file -> List.of()).thenAccept(written -> {
             if (written) {
-                edits.done(sender, "shop-edit.cost-set", Placeholder.unparsed("id", id), Placeholder.unparsed("cost", String.valueOf(cost.get())));
+                edits.done(sender, "shop-edit.cost-set", Placeholder.unparsed("id", id), Placeholder.unparsed("cost", Numbers.format(cost.get())));
             }
         });
     }
@@ -149,7 +150,7 @@ public final class ShopEditor {
                 .forEach(i -> {
                     var entry = entries.get(i);
                     messages.send(sender, "shop-edit.list-entry", Placeholder.unparsed("id", entry.id()), page(layout.placeOf(i)),
-                            slot(layout.placeOf(i)), Placeholder.unparsed("cost", String.valueOf(entry.cost())),
+                            slot(layout.placeOf(i)), Placeholder.unparsed("cost", Numbers.format(entry.cost())),
                             Placeholder.component("entry", messages.parse(entry.name())));
                 });
     }
@@ -185,7 +186,7 @@ public final class ShopEditor {
         // The buyer is told the icon's name, which would be the saved name without it.
         icon.put("name", name);
         var given = reward.of(item, name);
-        TagResolver[] tags = {Placeholder.unparsed("id", id), Placeholder.unparsed("cost", String.valueOf(cost)), Placeholder.unparsed("saved", saved)};
+        TagResolver[] tags = {Placeholder.unparsed("id", id), Placeholder.unparsed("cost", Numbers.format(cost)), Placeholder.unparsed("saved", saved)};
         edits.edit(player, KothFiles.SHOP, file -> ShopFile.add(file, id, cost, icon, given, place), file -> List.of()).thenAccept(written -> {
             if (written) {
                 savedItems.save(saved, item).whenCompleteAsync((ignored, failure) -> {

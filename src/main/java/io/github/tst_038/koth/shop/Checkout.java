@@ -1,5 +1,6 @@
 package io.github.tst_038.koth.shop;
 
+import io.github.tst_038.koth.text.Numbers;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.reward.Reward;
@@ -81,7 +82,7 @@ public final class Checkout {
         var buyer = server.getPlayer(id);
         if (left.isEmpty()) {
             wallet.balance(id).thenAccept(points -> tell(id, "shop.too-poor",
-                    Placeholder.unparsed("cost", String.valueOf(entry.cost())), Placeholder.unparsed("points", String.valueOf(points))));
+                    Placeholder.unparsed("cost", Numbers.format(entry.cost())), Placeholder.unparsed("points", Numbers.format(points))));
         } else if (buyer == null || players.isInMatch(id)) {
             // Items given to someone who has gone, or whom MiniGami holds, would be lost.
             refund(id, name, entry, "they were no longer free to receive it");
@@ -107,7 +108,7 @@ public final class Checkout {
             }
             logger.info(name + " bought " + entry.id() + " for " + entry.cost() + " points");
             messages.send(buyer, "shop.bought", Placeholder.component("entry", messages.parse(entry.name())),
-                    Placeholder.unparsed("cost", String.valueOf(entry.cost())));
+                    Placeholder.unparsed("cost", Numbers.format(entry.cost())));
         }
     }
 

@@ -1,5 +1,6 @@
 package io.github.tst_038.koth.sidebar;
 
+import io.github.tst_038.koth.text.Numbers;
 import io.github.tst_038.minigami.api.board.BoardClaim;
 import io.github.tst_038.minigami.api.board.BoardPriority;
 import io.github.tst_038.minigami.api.board.MiniGamiBoards;
@@ -91,7 +92,7 @@ public final class KothSidebar {
     private TagResolver balance(UUID player) {
         var points = balances.of(player);
         return points.isPresent()
-                ? Placeholder.unparsed("balance", String.valueOf(points.getAsLong()))
+                ? Placeholder.unparsed("balance", Numbers.format(points.getAsLong()))
                 : Placeholder.component("balance", messages.render("placeholder.balance-loading"));
     }
 

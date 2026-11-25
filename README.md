@@ -208,6 +208,7 @@ With PlaceholderAPI installed, KingOfTheHill's own:
 | `%koth_next_start%` | When it next starts, empty if nothing is planned |
 | `%koth_next_in%` | How long until then |
 | `%koth_balance%` | The viewer's points to spend |
+| `%koth_balance_formatted%` | The same, with thousands grouped: 1,250 |
 
 KOTH's stats are `points` (everything earned on the hill, spent or not), `kills`, `deaths` and `captures`. They live
 in MiniGami, so use its placeholders with the game `koth`:

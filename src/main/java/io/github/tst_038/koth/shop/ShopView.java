@@ -1,5 +1,6 @@
 package io.github.tst_038.koth.shop;
 
+import io.github.tst_038.koth.text.Numbers;
 import io.github.tst_038.koth.ledger.Wallet;
 import io.github.tst_038.minigami.api.menu.MenuContent;
 import io.github.tst_038.minigami.api.menu.MenuItem;
@@ -57,7 +58,7 @@ final class ShopView implements MenuContent {
             wallet.load(id);
         }
         var name = points.isPresent()
-                ? messages.render("shop.balance", Placeholder.unparsed("points", String.valueOf(points.getAsLong())))
+                ? messages.render("shop.balance", Placeholder.unparsed("points", Numbers.format(points.getAsLong())))
                 : messages.render("shop.balance-loading");
         return Optional.of(MenuItem.of(icons.head(viewer, name)));
     }

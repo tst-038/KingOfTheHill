@@ -1,5 +1,6 @@
 package io.github.tst_038.koth.shop;
 
+import io.github.tst_038.koth.text.Numbers;
 import io.github.tst_038.minigami.api.menu.MenuClick;
 import io.github.tst_038.minigami.api.menu.MenuContent;
 import io.github.tst_038.minigami.api.menu.MenuItem;
@@ -79,7 +80,7 @@ final class ShopEditorView implements MenuContent {
     @Override
     public Optional<MenuItem> centre() {
         var help = icons.named(new ItemStack(Material.BOOK), messages.render("shop-edit.menu-help"), List.of(
-                messages.render("shop-edit.menu-help-add", Placeholder.unparsed("cost", String.valueOf(shop.get().newCost()))),
+                messages.render("shop-edit.menu-help-add", Placeholder.unparsed("cost", Numbers.format(shop.get().newCost()))),
                 messages.render("shop-edit.menu-help-move")));
         return Optional.of(MenuItem.of(help));
     }

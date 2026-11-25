@@ -1,5 +1,6 @@
 package io.github.tst_038.koth.shop;
 
+import io.github.tst_038.koth.text.Numbers;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.message.Messages;
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ final class ShopIcons {
         entry.icon().look().applyTo(item);
         item.editMeta(meta -> {
             var lore = new ArrayList<>(own);
-            lore.add(plain(messages.render("shop.cost-line", Placeholder.unparsed("cost", String.valueOf(entry.cost())))));
+            lore.add(plain(messages.render("shop.cost-line", Placeholder.unparsed("cost", Numbers.format(entry.cost())))));
             if (entry.ownedPermission().filter(viewer::hasPermission).isPresent()) {
                 lore.add(plain(messages.render("shop.owned-line")));
             }

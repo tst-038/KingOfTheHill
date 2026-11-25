@@ -3,6 +3,7 @@ package io.github.tst_038.koth.status;
 import io.github.tst_038.koth.ledger.Balances;
 import io.github.tst_038.koth.schedule.ActivationEvent;
 import io.github.tst_038.koth.text.Durations;
+import io.github.tst_038.koth.text.Numbers;
 import io.github.tst_038.koth.text.Moments;
 import java.time.Clock;
 import java.time.Duration;
@@ -40,6 +41,7 @@ public final class KothPlaceholders {
             case "active" -> String.valueOf(current.running().isPresent());
             case "waiting" -> String.valueOf(current.waiting().isPresent());
             case "balance" -> viewer.map(balances::of).filter(balance -> balance.isPresent()).map(balance -> String.valueOf(balance.getAsLong())).orElse("");
+            case "balance_formatted" -> viewer.map(balances::of).filter(balance -> balance.isPresent()).map(balance -> Numbers.format(balance.getAsLong())).orElse("");
             default -> values(current, LocalDateTime.now(clock)).get(params);
         };
     }
