@@ -72,6 +72,21 @@ schedule:
   warn-minutes: [60, 15, 2]
 ```
 
+A line can have a start and an end of its own, as `{ start: "<line>", end: "<line>" }`: a window starts at each time
+of the start line and ends at the first time of the end line after it, at most 7 days later. A plain line lasts
+`length-minutes`. A window that runs past midnight needs the end line's own weekday:
+
+```yaml
+schedule:
+  type: cron
+  when:
+    - { start: "0 20 * * 1-4", end: "0 21 * * 1-4" }   # Monday to Thursday 20:00-21:00
+    - { start: "0 20 * * 5", end: "0 22 * * 5" }       # Friday 20:00-22:00
+    - { start: "0 23 * * 6", end: "0 1 * * 0" }        # Saturday 23:00 to Sunday 1:00
+    - "0 18 * * 3"                                     # Wednesday 18:00, length-minutes long
+  length-minutes: 60
+```
+
 Around the clock, 15 minutes on and 5 minutes off, counted from midnight:
 
 ```yaml

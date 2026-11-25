@@ -1,7 +1,7 @@
 package io.github.tst_038.koth.config;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
-import io.github.tst_038.minigami.core.schedule.Cron;
+import io.github.tst_038.koth.schedule.CronStart;
 import io.github.tst_038.koth.schedule.CronTimetable;
 import io.github.tst_038.koth.schedule.CycleTimetable;
 import io.github.tst_038.koth.schedule.Timetable;
@@ -58,13 +58,18 @@ public final class TimetableReader {
 
     private static Optional<Timetable> cron(ConfigReader schedule) {
         var length = minutes(schedule, "length-minutes");
-        var lines = schedule.has("when") ? schedule.stringsOrOne("when") : List.<String>of();
-        var starts = new ArrayList<Cron>();
-        for (String line : lines) {
-            try {
-                starts.add(Cron.parse(line));
-            } catch (IllegalArgumentException e) {
-                schedule.problem("when", "'" + line + "': " + e.getMessage());
+        var lines = schedule.has("when") ? schedule.sections("when", "cron") : List.<ConfigReader>of();
+        var starts = new ArrayList<CronStart>();
+        for (var line : lines) {
+            // A plain text item is read as a section with just its cron line.
+            if (line.has("cron")) {
+                line.cron("cron").ifPresent(cron -> starts.add(new CronStart.Fixed(cron, length)));
+            } else {
+                var start = line.cron("start");
+                var end = line.cron("end");
+                if (start.isPresent() && end.isPresent()) {
+                    starts.add(new CronStart.Paired(start.get(), end.get()));
+                }
             }
         }
         if (lines.isEmpty()) {

@@ -37,7 +37,7 @@ class ActivationsTest {
     }
 
     private static Plan plan(int lengthMinutes, int needed, String... lines) {
-        var starts = Arrays.stream(lines).map(Cron::parse).toList();
+        var starts = Arrays.stream(lines).<CronStart>map(line -> new CronStart.Fixed(Cron.parse(line), Duration.ofMinutes(lengthMinutes))).toList();
         return new Plan(new CronTimetable(starts, Duration.ofMinutes(lengthMinutes)), WARNINGS, List.of(new MinOnline(needed)));
     }
 

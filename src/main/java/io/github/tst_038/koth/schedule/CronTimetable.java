@@ -1,17 +1,19 @@
 package io.github.tst_038.koth.schedule;
 
-import io.github.tst_038.minigami.core.schedule.Cron;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
- * KOTH starts at every time any of the cron lines names and runs for {@code length}. Windows that overlap
+ * KOTH starts at every time any of the cron lines names and runs for that line's length. Windows that overlap
  * merge in effect: when one ends inside another, the other starts at once, for what is left of it.
+ *
+ * @param length the length of a window no cron line decides, such as a forced start's default
  */
-public record CronTimetable(List<Cron> starts, Duration length) implements Timetable {
+public record CronTimetable(List<CronStart> starts, Duration length) implements Timetable {
 
     public CronTimetable {
         starts = List.copyOf(starts);
@@ -25,23 +27,15 @@ public record CronTimetable(List<Cron> starts, Duration length) implements Timet
 
     @Override
     public Optional<Window> current(LocalDateTime now) {
-        // The first start after now - length is the earliest one whose window hasn't ended yet.
-        return starts.stream()
-                .flatMap(cron -> cron.next(now.minus(length)).stream())
-                .filter(start -> !start.isAfter(now))
-                .min(Comparator.naturalOrder())
-                .map(this::window);
+        return earliest(start -> start.openAt(now));
     }
 
     @Override
     public Optional<Window> next(LocalDateTime now) {
-        return starts.stream()
-                .flatMap(cron -> cron.next(now).stream())
-                .min(Comparator.naturalOrder())
-                .map(this::window);
+        return earliest(start -> start.after(now));
     }
 
-    private Window window(LocalDateTime start) {
-        return new Window(start, start.plus(length));
+    private Optional<Window> earliest(Function<CronStart, Optional<Window>> window) {
+        return starts.stream().map(window).flatMap(Optional::stream).min(Comparator.comparing(Window::start));
     }
 }

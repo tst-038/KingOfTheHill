@@ -8,14 +8,20 @@ world:
   respawn-here: true
 
 schedule:
-  # cron: KOTH starts at each time below and runs length-minutes.
+  # cron: KOTH starts at each time below and runs length-minutes, or as long as its line says.
   # cycle: active-minutes on, break-minutes off, around the clock, counted from midnight (server time).
   type: cron
   # Cron lines in server time: minute hour day-of-month month day-of-week (0 or 7 is Sunday).
+  # A line is text, which lasts length-minutes, or { start: "<line>", end: "<line>" }: a window starts at each time
+  # of the start line and ends at the first time of the end line after it, at most 7 days later, e.g.
+  #   - { start: "0 20 * * 1-4", end: "0 21 * * 1-4" }   # Monday to Thursday 20:00-21:00
+  #   - { start: "0 20 * * 5", end: "0 22 * * 5" }       # Friday 20:00-22:00
+  # A window past midnight needs the end line's own weekday: start "0 23 * * 1", end "0 1 * * 2".
   when:
     - "0 20 * * 1"    # Mondays 20:00
     - "0 20 * * 3"    # Wednesdays 20:00
     - "0 18 * * 6"    # Saturdays 18:00
+  # How long a window lasts when its line has no end; also what a forced start runs by default.
   length-minutes: 60
   # type: cycle
   # active-minutes: 15

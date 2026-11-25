@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.tst_038.koth.schedule.CronStart;
 import io.github.tst_038.koth.schedule.CronTimetable;
+import io.github.tst_038.minigami.core.schedule.Cron;
 import io.github.tst_038.koth.schedule.CycleTimetable;
 import java.time.Duration;
 import java.util.List;
@@ -23,17 +25,37 @@ class TimetableReaderTest {
     }
 
     @Test
-    void oneCronLineNeedsNoList() {
-        var reader = Yaml.reader("{ type: cron, when: '0 20 * * 1', length-minutes: 30 }");
+    void aCronLineCanBeAStartAndAnEnd() {
+        var reader = Yaml.reader("""
+                type: cron
+                length-minutes: 45
+                when:
+                  - { start: '0 20 * * 1-4', end: '0 21 * * 1-4' }
+                  - '0 18 * * 6'
+                """);
 
-        assertEquals(1, assertInstanceOf(CronTimetable.class, TimetableReader.read(reader).orElseThrow()).starts().size());
+        var timetable = assertInstanceOf(CronTimetable.class, TimetableReader.read(reader).orElseThrow());
+
+        assertEquals(Cron.parse("0 20 * * 1-4").toString(), assertInstanceOf(CronStart.Paired.class, timetable.starts().get(0)).start().toString());
+        assertEquals(Duration.ofMinutes(45), assertInstanceOf(CronStart.Fixed.class, timetable.starts().get(1)).length());
+        assertEquals(Duration.ofMinutes(45), timetable.length());
     }
 
     @Test
-    void readsACycle() {
-        var reader = Yaml.reader("{ type: cycle, active-minutes: 15, break-minutes: 5 }");
+    void aPairWithoutAnEndIsReportedUnderThatLine() {
+        var reader = Yaml.reader("{ type: cron, length-minutes: 60, when: ['0 20 * * 1', { start: '0 18 * * 6' }] }");
 
-        assertEquals(new CycleTimetable(Duration.ofMinutes(15), Duration.ofMinutes(5)), TimetableReader.read(reader).orElseThrow());
+        assertEquals(List.of("when[1].end: is missing"), Yaml.problems(reader, r -> assertTrue(TimetableReader.read(r).isPresent())));
+    }
+
+    @Test
+    void aBadEndIsReportedUnderThatLine() {
+        var reader = Yaml.reader("{ type: cron, length-minutes: 60, when: [{ start: '0 18 * * 6', end: 'soon' }] }");
+
+        var problems = Yaml.problems(reader, r -> assertTrue(TimetableReader.read(r).isEmpty()));
+
+        assertEquals(1, problems.size());
+        assertTrue(problems.getFirst().startsWith("when[0].end: "), problems.getFirst());
     }
 
     @Test
@@ -43,7 +65,7 @@ class TimetableReaderTest {
         var problems = Yaml.problems(reader, r -> assertTrue(TimetableReader.read(r).isPresent()));
 
         assertEquals(1, problems.size());
-        assertTrue(problems.getFirst().startsWith("when: 'soon': "), problems.getFirst());
+        assertTrue(problems.getFirst().startsWith("when[1].cron: "), problems.getFirst());
     }
 
     @Test
