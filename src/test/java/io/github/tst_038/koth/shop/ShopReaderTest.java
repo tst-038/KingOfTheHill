@@ -33,7 +33,7 @@ class ShopReaderTest {
     private final RewardReader rewards = new RewardReader(new SavedNames(Set.of()));
 
     /** Reading only asks whether an item exists; making an item needs a server. */
-    private record SavedNames(Set<String> names) implements MiniGamiSavedItems {
+    record SavedNames(Set<String> names) implements MiniGamiSavedItems {
 
         @Override
         public Optional<ItemStack> find(String name) {

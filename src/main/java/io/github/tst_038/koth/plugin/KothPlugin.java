@@ -26,6 +26,7 @@ import io.github.tst_038.koth.setup.KothSetup;
 import io.github.tst_038.koth.sidebar.KothSidebar;
 import io.github.tst_038.koth.shop.Checkout;
 import io.github.tst_038.koth.shop.Shop;
+import io.github.tst_038.koth.shop.ShopEditor;
 import io.github.tst_038.koth.shop.ShopListener;
 import io.github.tst_038.koth.shop.ShopReader;
 import io.github.tst_038.koth.stats.StatBuffer;
@@ -114,7 +115,8 @@ public final class KothPlugin extends JavaPlugin {
         Executor fileIo = task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run());
         var edits = new FileEdits(getDataPath(), messages, fileIo, serverThread, reload, getLogger());
         var commands = new KothCommands(getServer(), messages, runtime, joining, wallet, players, this::shop, savedItems, reload,
-                new KothSetup(setup, edits, messages, runtime::config), clock, serverThread, getLogger());
+                new KothSetup(setup, edits, messages, runtime::config),
+                new ShopEditor(edits, messages, savedItems, this::shop, serverThread, getLogger()), clock, serverThread, getLogger());
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(commands.playerRoot(), "King of the Hill: status, shop, points and going there");
             event.registrar().register(commands.adminRoot(), "Manage King of the Hill");

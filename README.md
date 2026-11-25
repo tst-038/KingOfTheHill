@@ -124,6 +124,12 @@ logged each time the shop is opened.
 An entry with `owned-permission` can't be bought again by someone who has that permission. Points are taken first,
 and given back if the rewards can't be delivered. Run `/kotha reload` after editing.
 
+The `/kotha shop` commands edit the file for you, keeping its comments, and reload. `/kotha shop add <id> <cost>` sells
+the item you hold: it is saved in MiniGami as `koth-<id>`, and the entry gets the first free slot, that item as its icon,
+named as the item is, and the item, as many as you hold, as its reward. `/kotha shop command <id> <cost> <command...>`
+sells a command instead, with the held item saved as the icon. Change the rest, such as `lore` or `owned-permission`, in
+the file.
+
 ## Messages
 
 Every text is in `plugins/KingOfTheHill/messages/en.yml`, in [MiniMessage](https://docs.advntr.dev/minimessage/) format.
@@ -156,16 +162,23 @@ For staff, with `koth.admin`:
 | `/kotha setup point set\|select\|show` | Set the hill to your WorldEdit selection, select it with WorldEdit, or outline it in particles for a few seconds |
 | `/kotha setup colours set\|select\|show` | The same for the box of blocks that change colour |
 | `/kotha setup spawn` | Set the spawn of `/koth join` to where you stand |
+| `/kotha shop add <id> <cost>` | Sell the item you hold, saved in MiniGami as `koth-<id>` |
+| `/kotha shop command <id> <cost> <command...>` | Sell a command, run from the console with `%player%` being the buyer; the item you hold is its icon and gives it its name |
+| `/kotha shop cost <id> <cost>` | Change what an entry costs |
+| `/kotha shop slot <id> <slot>` | Move an entry to another free slot of the menu |
+| `/kotha shop remove <id>` | Remove an entry; its saved item stays, for `/mga loot delete koth-<id>` |
+| `/kotha shop list` | List the entries of the shop in use |
 
 For `points`, the player must have been on the server before; names are looked up from the server's user cache.
-`setup` is done in the KOTH world, and `set` and `select` need WorldEdit or FastAsyncWorldEdit.
+`setup` is done in the KOTH world, and `set` and `select` need WorldEdit or FastAsyncWorldEdit. An entry `id` is
+lower-case letters, digits, `_` and `-`.
 
 ## Permissions
 
 | Permission | Default | |
 |---|---|---|
 | `koth.play` | everyone | `/koth`, the shop, your points and going to the KOTH world |
-| `koth.admin` | op | `/kotha`: reload, start and stop, giving and taking points, and setting up |
+| `koth.admin` | op | `/kotha`: reload, start and stop, giving and taking points, setting up, and editing the shop |
 
 ## Placeholders
 

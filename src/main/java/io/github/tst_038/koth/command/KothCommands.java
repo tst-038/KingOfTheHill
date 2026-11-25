@@ -18,6 +18,7 @@ import io.github.tst_038.koth.round.KothRuntime;
 import io.github.tst_038.koth.setup.KothSetup;
 import io.github.tst_038.koth.setup.KothSetup.Box;
 import io.github.tst_038.koth.shop.Shop;
+import io.github.tst_038.koth.shop.ShopEditor;
 import io.github.tst_038.koth.shop.ShopMenu;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -42,7 +43,8 @@ import org.bukkit.entity.Player;
 
 /**
  * {@code /koth [shop|balance|join]} for players, and {@code /kotha reload|start [minutes]|stop|status|points give|take|show <player> [amount]}
- * and {@code /kotha setup point|colours set|select|show} and {@code /kotha setup spawn} for staff. Server thread only.
+ * and {@code /kotha setup point|colours set|select|show}, {@code /kotha setup spawn} and
+ * {@code /kotha shop add|command|cost|slot|remove|list} for staff. Server thread only.
  */
 public final class KothCommands {
 
@@ -68,12 +70,13 @@ public final class KothCommands {
     private final MiniGamiSavedItems savedItems;
     private final Consumer<Audience> reload;
     private final KothSetup setup;
+    private final ShopEditor shopEditor;
     private final Clock clock;
     private final Executor serverThread;
     private final Logger logger;
 
     public KothCommands(Server server, Messages messages, KothRuntime runtime, Joining joining, Wallet wallet, MiniGamiPlayers players, Supplier<Shop> shop,
-            MiniGamiSavedItems savedItems, Consumer<Audience> reload, KothSetup setup, Clock clock, Executor serverThread, Logger logger) {
+            MiniGamiSavedItems savedItems, Consumer<Audience> reload, KothSetup setup, ShopEditor shopEditor, Clock clock, Executor serverThread, Logger logger) {
         this.server = server;
         this.messages = messages;
         this.runtime = runtime;
@@ -84,6 +87,7 @@ public final class KothCommands {
         this.savedItems = savedItems;
         this.reload = reload;
         this.setup = setup;
+        this.shopEditor = shopEditor;
         this.clock = clock;
         this.serverThread = serverThread;
         this.logger = logger;
@@ -120,6 +124,30 @@ public final class KothCommands {
                         .then(box("point", Box.POINT))
                         .then(box("colours", Box.COLOURS))
                         .then(Commands.literal("spawn").executes(byPlayer(setup::spawn))))
+                .then(Commands.literal("shop")
+                        .then(Commands.literal("add").requires(KothCommands::isPlayer).then(newId().then(cost().executes(context -> {
+                            shopEditor.add((Player) context.getSource().getExecutor(), idOf(context), costOf(context));
+                            return Command.SINGLE_SUCCESS;
+                        }))))
+                        .then(Commands.literal("command").requires(KothCommands::isPlayer).then(newId().then(cost()
+                                .then(Commands.argument("command", StringArgumentType.greedyString()).executes(context -> {
+                                    shopEditor.command((Player) context.getSource().getExecutor(), idOf(context), costOf(context),
+                                            StringArgumentType.getString(context, "command"));
+                                    return Command.SINGLE_SUCCESS;
+                                })))))
+                        .then(Commands.literal("cost").then(entryId().then(cost().executes(context -> {
+                            shopEditor.cost(context.getSource().getSender(), idOf(context), costOf(context));
+                            return Command.SINGLE_SUCCESS;
+                        }))))
+                        .then(Commands.literal("slot").then(entryId().then(Commands.argument("slot", IntegerArgumentType.integer(0, 53)).executes(context -> {
+                            shopEditor.slot(context.getSource().getSender(), idOf(context), IntegerArgumentType.getInteger(context, "slot"));
+                            return Command.SINGLE_SUCCESS;
+                        }))))
+                        .then(Commands.literal("remove").then(entryId().executes(context -> {
+                            shopEditor.remove(context.getSource().getSender(), idOf(context));
+                            return Command.SINGLE_SUCCESS;
+                        })))
+                        .then(Commands.literal("list").executes(bySender(shopEditor::list))))
                 .build();
     }
 
@@ -237,6 +265,29 @@ public final class KothCommands {
                     .filter(name -> name.toLowerCase(Locale.ROOT).startsWith(builder.getRemainingLowerCase())).forEach(builder::suggest);
             return builder.buildFuture();
         });
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, String> newId() {
+        return Commands.argument("id", StringArgumentType.word());
+    }
+
+    private RequiredArgumentBuilder<CommandSourceStack, String> entryId() {
+        return newId().suggests((context, builder) -> {
+            shopEditor.ids().stream().filter(id -> id.startsWith(builder.getRemainingLowerCase())).forEach(builder::suggest);
+            return builder.buildFuture();
+        });
+    }
+
+    private static String idOf(CommandContext<CommandSourceStack> context) {
+        return StringArgumentType.getString(context, "id");
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, Integer> cost() {
+        return Commands.argument("cost", IntegerArgumentType.integer(1));
+    }
+
+    private static int costOf(CommandContext<CommandSourceStack> context) {
+        return IntegerArgumentType.getInteger(context, "cost");
     }
 
     private static RequiredArgumentBuilder<CommandSourceStack, Long> amount() {

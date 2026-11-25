@@ -86,3 +86,24 @@ setup:
 edit:
   not-saved: "%prefix%<red>%file% was left as it was; it would have these problems:"
   failed: "%prefix%<red>Could not write %file%; see the log."
+# /kotha shop. %id%: the entry, %saved%: the name its item is saved under in MiniGami
+shop-edit:
+  bad-id: "%prefix%<red>An id is lower-case letters, digits, _ and -."
+  no-item: "%prefix%<red>Hold the item for the entry."
+  exists: "%prefix%<red>The shop has an entry <white>%id%</white> already."
+  unknown: "%prefix%<red>The shop has no entry <white>%id%</white>."
+  full: "%prefix%<red>The shop has no free slot; raise rows in shop.yml or remove an entry."
+  # %last%: the last slot of the menu
+  slot-outside: "%prefix%<red>The menu's slots go from 0 to %last%."
+  slot-taken: "%prefix%<red>That slot is <white>%id%</white>'s."
+  # %cost%
+  added: "%prefix%<green>Added <white>%id%</white> for <gold>%cost%</gold> points, its item saved as <white>%saved%</white>."
+  item-not-written: "%prefix%<red>Could not write the saved item <white>%saved%</white>; it is lost on a restart. See the log."
+  cost-set: "%prefix%<green><white>%id%</white> now costs <gold>%cost%</gold> points."
+  # %slot%
+  slot-set: "%prefix%<green>Moved <white>%id%</white> to slot %slot%."
+  removed: "%prefix%<green>Removed <white>%id%</white>. Its item stays saved as <white>%saved%</white>; /mga loot delete %saved% deletes it."
+  list-header: "%prefix%<gray>Shop entries:"
+  # %slot%, %cost%, %entry%: its name
+  list-entry: "<dark_gray>-</dark_gray> <white>%id%</white> <gray>slot %slot%, <gold>%cost%</gold> points:</gray> %entry%"
+  list-empty: "%prefix%<gray>The shop in use has no entries."
