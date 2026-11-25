@@ -4,6 +4,7 @@ import io.github.tst_038.koth.hill.Hill;
 import io.github.tst_038.koth.stats.KothStats;
 import io.github.tst_038.koth.stats.StatBuffer;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
@@ -44,7 +45,8 @@ final class Round {
             colour = Optional.empty();
             ground.paint(neutral);
         });
-        var tick = hill.tick(ground.onPoint());
+        var onPoint = ground.onPoint();
+        var tick = hill.tick(onPoint);
         tick.captured().ifPresent(player -> {
             var name = ground.nameOf(player);
             holderName = Optional.of(name);
@@ -58,6 +60,18 @@ final class Round {
             ground.credit(player, tick.earned());
             stats.add(player, KothStats.POINTS, tick.earned());
         });
+        ground.show(bar(onPoint));
+    }
+
+    private HillBar bar(List<UUID> onPoint) {
+        if (onPoint.size() > 1) {
+            return new HillBar.Contested();
+        }
+        var taker = hill.taker();
+        if (taker.isPresent()) {
+            return new HillBar.Capturing(ground.nameOf(taker.get()), hill.progress(), hill.captureSeconds());
+        }
+        return holderName.<HillBar>map(HillBar.Holding::new).orElseGet(HillBar.Free::new);
     }
 
     void end() {

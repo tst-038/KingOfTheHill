@@ -74,4 +74,14 @@ final class Announcer {
     void dropped(World world, String player) {
         messages.send(world, "announce.dropped", Placeholder.unparsed("player", player));
     }
+
+    void bar(World world, HillBar bar) {
+        world.sendActionBar(switch (bar) {
+            case HillBar.Free free -> messages.render("bar.free");
+            case HillBar.Holding holding -> messages.render("bar.holding", Placeholder.unparsed("player", holding.holder()));
+            case HillBar.Capturing capturing -> messages.render("bar.capturing", Placeholder.unparsed("player", capturing.taker()),
+                    Placeholder.unparsed("seconds", String.valueOf(capturing.seconds())), Placeholder.unparsed("needed", String.valueOf(capturing.needed())));
+            case HillBar.Contested contested -> messages.render("bar.contested");
+        });
+    }
 }

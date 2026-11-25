@@ -56,6 +56,11 @@ public final class Hill {
         return capture.taker();
     }
 
+    /** Seconds a player must stand on it alone to take it. */
+    public int captureSeconds() {
+        return captureSeconds;
+    }
+
     /** Seconds the taker has stood on it alone so far. */
     public int progress() {
         return capture.progress();

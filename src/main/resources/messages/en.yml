@@ -11,6 +11,14 @@ announce:
   # %player%
   captured: "%prefix%<gold>%player%</gold> <yellow>took the hill!"
   dropped: "%prefix%<gray>%player% left, so the hill is free."
+# Action bar in the KOTH world every second while KOTH runs; which one depends on the hill
+bar:
+  free: "<gray>The hill is up for grabs"
+  # %player%: who holds it
+  holding: "<gold>%player%</gold> <gray>holds the hill"
+  # %player% stands on it alone, %seconds% of %needed%
+  capturing: "<gold>%player%</gold> <gray>is taking the hill <dark_gray>(<white>%seconds%/%needed%s</white>)"
+  contested: "<red>The hill is contested!"
 restriction:
   min-online: "only %online% of the %needed% players needed are online"
 placeholder:

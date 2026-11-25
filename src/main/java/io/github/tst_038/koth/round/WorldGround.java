@@ -71,6 +71,11 @@ final class WorldGround implements Ground {
     }
 
     @Override
+    public void show(HillBar bar) {
+        announcer.bar(world, bar);
+    }
+
+    @Override
     public void credit(UUID player, long points) {
         wallet.credit(player, points);
     }

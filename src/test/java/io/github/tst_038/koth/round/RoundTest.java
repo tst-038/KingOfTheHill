@@ -32,6 +32,7 @@ class RoundTest {
         final List<String> told = new ArrayList<>();
         final List<DyeColor> painted = new ArrayList<>();
         long credited;
+        HillBar bar;
 
         @Override
         public List<UUID> onPoint() {
@@ -64,6 +65,11 @@ class RoundTest {
         }
 
         @Override
+        public void show(HillBar bar) {
+            this.bar = bar;
+        }
+
+        @Override
         public void credit(UUID player, long points) {
             credited += points;
         }
@@ -77,6 +83,27 @@ class RoundTest {
         for (int i = 0; i < count; i++) {
             round.second();
         }
+    }
+
+    @Test
+    void theBarShowsHowTheHillStands() {
+        seconds(1);
+        assertEquals(new HillBar.Free(), ground.bar);
+
+        ground.onPoint = List.of(ALICE);
+        seconds(1);
+        assertEquals(new HillBar.Capturing("Alice", 1, 2), ground.bar);
+
+        seconds(1);
+        assertEquals(new HillBar.Holding("Alice"), ground.bar);
+
+        ground.onPoint = List.of(ALICE, BOB);
+        seconds(1);
+        assertEquals(new HillBar.Contested(), ground.bar);
+
+        ground.onPoint = List.of(BOB);
+        seconds(1);
+        assertEquals(new HillBar.Capturing("Bob", 1, 2), ground.bar);
     }
 
     @Test

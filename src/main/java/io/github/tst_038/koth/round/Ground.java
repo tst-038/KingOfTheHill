@@ -24,6 +24,9 @@ interface Ground {
     /** Tells the world that the hill is free because its holder is gone. */
     void dropped(String player);
 
+    /** Shows the players in the KOTH world how the hill stands this second. */
+    void show(HillBar bar);
+
     /** Gives the player spendable points. */
     void credit(UUID player, long points);
 }
