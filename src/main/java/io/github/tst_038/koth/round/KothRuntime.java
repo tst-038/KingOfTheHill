@@ -49,10 +49,10 @@ public final class KothRuntime {
     private int secondsSinceFlush;
     private volatile KothStatus status = KothStatus.OFF;
 
-    public KothRuntime(Server server, Messages messages, Wallet wallet, MiniGamiStats miniGamiStats, MiniGamiPlayers players, StatBuffer buffer,
+    public KothRuntime(Server server, Messages messages, Wallet wallet, MiniGamiStats miniGamiStats, MiniGamiPlayers players, Joining joining, StatBuffer buffer,
             Clock clock, RandomGenerator random, Consumer<LocalDateTime> onDismissed, Logger logger) {
         this.server = server;
-        this.announcer = new Announcer(server, messages);
+        this.announcer = new Announcer(server, messages, joining);
         this.wallet = wallet;
         this.miniGamiStats = miniGamiStats;
         this.players = players;

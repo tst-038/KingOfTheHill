@@ -12,6 +12,7 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.koth.ledger.Wallet;
 import io.github.tst_038.koth.message.StatusResolver;
+import io.github.tst_038.koth.round.Joining;
 import io.github.tst_038.koth.round.KothRuntime;
 import io.github.tst_038.koth.shop.Shop;
 import io.github.tst_038.koth.shop.ShopMenu;
@@ -42,7 +43,6 @@ import org.bukkit.entity.Player;
  */
 public final class KothCommands {
 
-    public static final String PLAY = "koth.play";
     public static final String ADMIN = "koth.admin";
 
     private enum Points {
@@ -58,6 +58,7 @@ public final class KothCommands {
     private final Server server;
     private final Messages messages;
     private final KothRuntime runtime;
+    private final Joining joining;
     private final Wallet wallet;
     private final MiniGamiPlayers players;
     private final Supplier<Shop> shop;
@@ -67,11 +68,12 @@ public final class KothCommands {
     private final Executor serverThread;
     private final Logger logger;
 
-    public KothCommands(Server server, Messages messages, KothRuntime runtime, Wallet wallet, MiniGamiPlayers players, Supplier<Shop> shop,
+    public KothCommands(Server server, Messages messages, KothRuntime runtime, Joining joining, Wallet wallet, MiniGamiPlayers players, Supplier<Shop> shop,
             MiniGamiSavedItems savedItems, Consumer<Audience> reload, Clock clock, Executor serverThread, Logger logger) {
         this.server = server;
         this.messages = messages;
         this.runtime = runtime;
+        this.joining = joining;
         this.wallet = wallet;
         this.players = players;
         this.shop = shop;
@@ -84,11 +86,11 @@ public final class KothCommands {
 
     public LiteralCommandNode<CommandSourceStack> playerRoot() {
         return Commands.literal("koth")
-                .requires(source -> source.getSender().hasPermission(PLAY))
+                .requires(source -> source.getSender().hasPermission(Joining.PLAY))
                 .executes(bySender(this::info))
                 .then(Commands.literal("shop").requires(KothCommands::isPlayer).executes(byPlayer(this::openShop)))
                 .then(Commands.literal("balance").requires(KothCommands::isPlayer).executes(byPlayer(this::balance)))
-                .then(Commands.literal("join").requires(KothCommands::isPlayer).executes(byPlayer(this::join)))
+                .then(Commands.literal("join").requires(KothCommands::isPlayer).executes(byPlayer(joining::join)))
                 .build();
     }
 
@@ -148,21 +150,6 @@ public final class KothCommands {
             // Not read yet, as just after joining; ask again.
             wallet.load(id);
             messages.send(player, "balance.loading");
-        }
-    }
-
-    private void join(Player player) {
-        var config = runtime.config();
-        if (config.isEmpty()) {
-            messages.send(player, "status.not-configured");
-        } else if (players.isInMatch(player.getUniqueId())) {
-            messages.send(player, "join.in-match");
-        } else {
-            player.teleportAsync(config.get().spawnOrDefault()).thenAcceptAsync(moved -> {
-                if (moved) {
-                    messages.send(player, "join.done");
-                }
-            }, serverThread);
         }
     }
 

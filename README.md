@@ -123,6 +123,8 @@ and given back if the rewards can't be delivered. Run `/kotha reload` after edit
 
 Every text is in `plugins/KingOfTheHill/messages/en.yml`, in [MiniMessage](https://docs.advntr.dev/minimessage/) format.
 Keys you remove fall back to the bundled text. Use `%prefix%` for the shared prefix.
+In the announcements, `<join>...</join>` makes the text a link that sends whoever clicks it to the KOTH world at once
+(they need `koth.play`), without the client asking them to confirm a command.
 
 ## Commands
 

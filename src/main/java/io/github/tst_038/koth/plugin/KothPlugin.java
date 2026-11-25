@@ -17,6 +17,7 @@ import io.github.tst_038.koth.ledger.PointsLedger;
 import io.github.tst_038.koth.ledger.Wallet;
 import io.github.tst_038.koth.round.CombatListener;
 import io.github.tst_038.koth.placeholder.KothExpansion;
+import io.github.tst_038.koth.round.Joining;
 import io.github.tst_038.koth.round.KothRuntime;
 import io.github.tst_038.koth.schedule.HandledWindows;
 import io.github.tst_038.koth.sidebar.KothSidebar;
@@ -83,7 +84,8 @@ public final class KothPlugin extends JavaPlugin {
         var clock = Clock.systemDefaultZone();
         var buffer = new StatBuffer();
         handledWindows = new HandledWindows(storage);
-        runtime = new KothRuntime(getServer(), messages, wallet, stats, players, buffer, clock, RandomGenerator.getDefault(),
+        var joining = new Joining(() -> runtime.config(), players, messages, serverThread);
+        runtime = new KothRuntime(getServer(), messages, wallet, stats, players, joining, buffer, clock, RandomGenerator.getDefault(),
                 start -> handledWindows.remember(start).exceptionally(failure -> {
                     getLogger().log(Level.WARNING, "Could not remember that the window of " + start + " was skipped or stopped", failure);
                     return null;
@@ -103,7 +105,7 @@ public final class KothPlugin extends JavaPlugin {
             runtime.second();
             sidebar.update(runtime.config(), runtime.status());
         }, 20, 20);
-        var commands = new KothCommands(getServer(), messages, runtime, wallet, players, this::shop, savedItems, requester -> loadConfig(files, messages, requester), clock, serverThread, getLogger());
+        var commands = new KothCommands(getServer(), messages, runtime, joining, wallet, players, this::shop, savedItems, requester -> loadConfig(files, messages, requester), clock, serverThread, getLogger());
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(commands.playerRoot(), "King of the Hill: status, shop, points and going there");
             event.registrar().register(commands.adminRoot(), "Manage King of the Hill");

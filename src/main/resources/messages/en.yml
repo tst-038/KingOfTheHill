@@ -1,9 +1,10 @@
 prefix: "<gray>「<gold>KOTH</gold>」 "
 announce:
+  # <join>...</join> makes the text a link that sends whoever clicks it to the KOTH world, without asking them to confirm a command
   # %time%: how long until it starts, %start%: when
-  warning: "%prefix%<yellow>King of the Hill starts in <white>%time%</white>. <click:run_command:'/koth join'><gold>[Go there]</gold></click>"
+  warning: "%prefix%<yellow>King of the Hill starts in <white>%time%</white>. <join><gold>[Go there]</gold></join>"
   # %end%: when it ends
-  started: "%prefix%<green>King of the Hill is on until <white>%end%</white>! <click:run_command:'/koth join'><gold>[Go there]</gold></click>"
+  started: "%prefix%<green>King of the Hill is on until <white>%end%</white>! <join><gold>[Go there]</gold></join>"
   # %reason%: why, from restriction.*; %end%: when the window ends
   waiting: "%prefix%<yellow>King of the Hill is waiting: %reason%. It starts as soon as that changes, and runs until <white>%end%</white> at most."
   ended: "%prefix%<gray>King of the Hill is over."
@@ -28,6 +29,8 @@ balance:
 join:
   in-match: "%prefix%<red>Leave your match first."
   done: "%prefix%<gray>Off you go."
+  # Clicking the link in an announcement without koth.play
+  no-permission: "%prefix%<red>You may not play King of the Hill."
 shop:
   cost-line: "<gray>Cost: <gold>%cost%</gold> points"
   owned-line: "<green>You have this already"
