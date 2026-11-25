@@ -3,16 +3,20 @@ package io.github.tst_038.koth.shop;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.tst_038.minigami.api.item.ItemLook;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
+import io.github.tst_038.minigami.api.menu.Place;
 import io.github.tst_038.minigami.api.reward.RewardReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 
@@ -20,10 +24,9 @@ class ShopReaderTest {
 
     private static final String ENTRY = """
             title: "Shop"
-            rows: 1
             entries:
               a:
-                slot: %d
+                %s
                 cost: 5
                 icon: { item: diamond, name: "Diamond" }
                 rewards: %s
@@ -59,6 +62,14 @@ class ShopReaderTest {
         return load(yaml).problems().stream().map(Object::toString).toList();
     }
 
+    private ShopEntry only(String yaml) {
+        return load(yaml).shop().orElseThrow().entries().getFirst();
+    }
+
+    private static String entry(String place) {
+        return ENTRY.formatted(place, "[ { item: diamond } ]");
+    }
+
     @Test
     void theBundledShopLoadsWithNoProblems() throws IOException {
         try (var in = getClass().getResourceAsStream("/shop.yml")) {
@@ -66,41 +77,55 @@ class ShopReaderTest {
 
             assertEquals(List.of(), loaded.problems());
             var shop = loaded.shop().orElseThrow();
-            assertEquals(3, shop.rows());
             assertEquals(List.of("diamonds", "anvil"), shop.entries().stream().map(ShopEntry::id).toList());
-            assertEquals(Optional.of("essentials.anvil"), shop.at(15).orElseThrow().ownedPermission());
+            assertEquals(Optional.of("essentials.anvil"), shop.entries().get(1).ownedPermission());
+            assertEquals(Optional.of(new Place(0, 24)), shop.entries().get(1).place());
         }
     }
 
     @Test
-    void anEntryIsFoundByItsSlot() {
-        var shop = load(ENTRY.formatted(3, "[ { item: diamond } ]")).shop().orElseThrow();
-
-        assertEquals(Material.DIAMOND, ((ShopEntry.Icon.Plain) shop.at(3).orElseThrow().icon()).material());
-        assertEquals(5, shop.at(3).orElseThrow().cost());
-        assertTrue(shop.at(4).isEmpty());
+    void aSlotIsOnTheFirstPageUnlessAPageIsGiven() {
+        assertEquals(Optional.of(new Place(0, 3)), only(entry("slot: 3")).place());
+        assertEquals(Optional.of(new Place(1, 44)), only(entry("page: 2\n    slot: 44")).place());
     }
 
     @Test
-    void twoEntriesInOneSlotAreAProblem() {
-        var twice = ENTRY.formatted(2, "[ { item: diamond } ]") + ENTRY.substring(ENTRY.indexOf("  a:")).replace("  a:", "  b:").formatted(2, "[ { item: diamond } ]");
+    void anEntryWithoutASlotHasNoPlace() {
+        assertEquals(Optional.empty(), only(entry("")).place());
+    }
+
+    @Test
+    void aPageWithoutASlotIsAProblem() {
+        assertEquals(List.of("shop.yml: entries.a.page: needs a slot too; an entry without a slot takes the next free one"), problems(entry("page: 2")));
+    }
+
+    @Test
+    void twoEntriesInOnePlaceAreAProblem() {
+        var twice = entry("slot: 2") + entry("slot: 2").substring(ENTRY.indexOf("  a:")).replace("  a:", "  b:");
 
         assertEquals(List.of("shop.yml: entries.b.slot: is used by another entry"), problems(twice));
     }
 
     @Test
-    void aSlotPastTheRowsIsAProblem() {
-        assertEquals(List.of("shop.yml: entries.a.slot: must be between 0 and 8"), problems(ENTRY.formatted(9, "[ { item: diamond } ]")));
+    void theSameSlotOnAnotherPageIsFine() {
+        var two = entry("slot: 2") + entry("page: 2\n    slot: 2").substring(ENTRY.indexOf("  a:")).replace("  a:", "  b:");
+
+        assertEquals(List.of(), problems(two));
+    }
+
+    @Test
+    void aSlotInTheBarIsAProblem() {
+        assertEquals(List.of("shop.yml: entries.a.slot: must be between 0 and 44"), problems(entry("slot: 45")));
     }
 
     @Test
     void anEntryWithNoRewardsIsAProblem() {
-        assertEquals(List.of("shop.yml: entries.a.rewards: needs at least one reward"), problems(ENTRY.formatted(0, "[]")));
+        assertEquals(List.of("shop.yml: entries.a.rewards: needs at least one reward"), problems(ENTRY.formatted("slot: 0", "[]")));
     }
 
     @Test
     void aSavedItemThatIsNotSavedIsReported() {
-        var problems = problems(ENTRY.formatted(0, "[ { saved: koth-crate-key } ]"));
+        var problems = problems(ENTRY.formatted("slot: 0", "[ { saved: koth-crate-key } ]"));
 
         assertEquals(1, problems.size());
         assertTrue(problems.getFirst().startsWith("shop.yml: entries.a.rewards[0].saved: no saved item 'koth-crate-key'"), problems.getFirst());
@@ -108,45 +133,62 @@ class ShopReaderTest {
 
     @Test
     void aFileWithProblemsLoadsNoShop() {
-        assertTrue(load(ENTRY.formatted(9, "[]")).shop().isEmpty());
+        assertTrue(load(ENTRY.formatted("slot: 45", "[]")).shop().isEmpty());
     }
 
     @Test
     void anOwnedPermissionIsOptional() {
-        var shop = load(ENTRY.formatted(0, "[ { item: diamond } ]")).shop().orElseThrow();
+        assertEquals(Optional.empty(), only(entry("slot: 0")).ownedPermission());
+    }
 
-        assertEquals(Optional.empty(), shop.at(0).orElseThrow().ownedPermission());
+    @Test
+    void theEditorHasDefaultsAShopMayChange() {
+        var plain = load(entry("")).shop().orElseThrow();
+        var changed = load("editor: { new-cost: 250, cost-step: 50 }\n" + entry("")).shop().orElseThrow();
+
+        assertEquals(List.of(Shop.NEW_COST, Shop.COST_STEP), List.of(plain.newCost(), plain.costStep()));
+        assertEquals(List.of(250, 50), List.of(changed.newCost(), changed.costStep()));
     }
 
     private static final String ICON = """
             title: "Shop"
-            rows: 1
             entries:
               a:
-                slot: 0
                 cost: 5
                 icon: %s
                 rewards: [ { item: diamond } ]
             """;
 
     private ShopEntry.Icon icon(String icon) {
-        return load(ICON.formatted(icon)).shop().orElseThrow().at(0).orElseThrow().icon();
+        return only(ICON.formatted(icon)).icon();
     }
 
     @Test
     void aPlainIconHasAnItemANameAndLore() {
-        assertEquals(new ShopEntry.Icon.Plain(Material.ANVIL, "Anvil", List.of("a")), icon("{ item: anvil, name: Anvil, lore: [a] }"));
+        assertEquals(new ShopEntry.Icon.Plain(Material.ANVIL, "Anvil", List.of("a"), OptionalInt.empty(), ItemLook.NONE),
+                icon("{ item: anvil, name: Anvil, lore: [a] }"));
     }
 
     @Test
     void aSavedIconNeedsNoNameOrLore() {
-        assertEquals(new ShopEntry.Icon.Saved("koth-crate-key", Optional.empty(), Optional.empty()), icon("{ saved: koth-crate-key }"));
+        assertEquals(new ShopEntry.Icon.Saved("koth-crate-key", Optional.empty(), Optional.empty(), OptionalInt.empty(), ItemLook.NONE),
+                icon("{ saved: koth-crate-key }"));
     }
 
     @Test
     void aSavedIconMayReplaceTheNameAndLore() {
-        assertEquals(new ShopEntry.Icon.Saved("koth-crate-key", Optional.of("Key"), Optional.of(List.of("a"))),
+        assertEquals(new ShopEntry.Icon.Saved("koth-crate-key", Optional.of("Key"), Optional.of(List.of("a")), OptionalInt.empty(), ItemLook.NONE),
                 icon("{ saved: koth-crate-key, name: Key, lore: [a] }"));
+    }
+
+    @Test
+    void anIconMayGlowHaveAModelAndAnAmount() {
+        var look = new ItemLook(Optional.of(true), Optional.of(new NamespacedKey("myserver", "ruby")), Optional.of(2f));
+
+        assertEquals(new ShopEntry.Icon.Plain(Material.DIAMOND, "Ruby", List.of(), OptionalInt.of(8), look),
+                icon("{ item: diamond, name: Ruby, amount: 8, glow: true, item-model: 'myserver:ruby', custom-model-data: 2 }"));
+        assertEquals(new ShopEntry.Icon.Saved("koth-crate-key", Optional.empty(), Optional.empty(), OptionalInt.empty(),
+                new ItemLook(Optional.of(true), Optional.empty(), Optional.empty())), icon("{ saved: koth-crate-key, glow: true }"));
     }
 
     @Test

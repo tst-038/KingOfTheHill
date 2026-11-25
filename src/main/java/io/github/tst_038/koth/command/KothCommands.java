@@ -8,9 +8,9 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
+import io.github.tst_038.minigami.api.menu.PageLayout;
+import io.github.tst_038.minigami.api.menu.Place;
 import io.github.tst_038.minigami.api.message.Messages;
-import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.koth.ledger.Wallet;
 import io.github.tst_038.koth.message.StatusResolver;
 import io.github.tst_038.koth.round.Joining;
@@ -19,7 +19,7 @@ import io.github.tst_038.koth.setup.KothSetup;
 import io.github.tst_038.koth.setup.KothSetup.Box;
 import io.github.tst_038.koth.shop.Shop;
 import io.github.tst_038.koth.shop.ShopEditor;
-import io.github.tst_038.koth.shop.ShopMenu;
+import io.github.tst_038.koth.shop.ShopMenus;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import java.time.Clock;
@@ -44,7 +44,7 @@ import org.bukkit.entity.Player;
 /**
  * {@code /koth [shop|balance|join]} for players, and {@code /kotha reload|start [minutes]|stop|status|points give|take|show <player> [amount]}
  * and {@code /kotha setup point|colours set|select|show}, {@code /kotha setup spawn} and
- * {@code /kotha shop add|command|cost|slot|remove|list} for staff. Server thread only.
+ * {@code /kotha shop [add|command|cost|slot|remove|list]} for staff, the shop editor without a subcommand. Server thread only.
  */
 public final class KothCommands {
 
@@ -65,29 +65,27 @@ public final class KothCommands {
     private final KothRuntime runtime;
     private final Joining joining;
     private final Wallet wallet;
-    private final MiniGamiPlayers players;
     private final Supplier<Shop> shop;
-    private final MiniGamiSavedItems savedItems;
     private final Consumer<Audience> reload;
     private final KothSetup setup;
     private final ShopEditor shopEditor;
+    private final ShopMenus shopMenus;
     private final Clock clock;
     private final Executor serverThread;
     private final Logger logger;
 
-    public KothCommands(Server server, Messages messages, KothRuntime runtime, Joining joining, Wallet wallet, MiniGamiPlayers players, Supplier<Shop> shop,
-            MiniGamiSavedItems savedItems, Consumer<Audience> reload, KothSetup setup, ShopEditor shopEditor, Clock clock, Executor serverThread, Logger logger) {
+    public KothCommands(Server server, Messages messages, KothRuntime runtime, Joining joining, Wallet wallet, Supplier<Shop> shop,
+            Consumer<Audience> reload, KothSetup setup, ShopEditor shopEditor, ShopMenus shopMenus, Clock clock, Executor serverThread, Logger logger) {
         this.server = server;
         this.messages = messages;
         this.runtime = runtime;
         this.joining = joining;
         this.wallet = wallet;
-        this.players = players;
         this.shop = shop;
-        this.savedItems = savedItems;
         this.reload = reload;
         this.setup = setup;
         this.shopEditor = shopEditor;
+        this.shopMenus = shopMenus;
         this.clock = clock;
         this.serverThread = serverThread;
         this.logger = logger;
@@ -97,7 +95,7 @@ public final class KothCommands {
         return Commands.literal("koth")
                 .requires(source -> source.getSender().hasPermission(Joining.PLAY))
                 .executes(bySender(this::info))
-                .then(Commands.literal("shop").requires(KothCommands::isPlayer).executes(byPlayer(this::openShop)))
+                .then(Commands.literal("shop").requires(KothCommands::isPlayer).executes(byPlayer(shopMenus::openShop)))
                 .then(Commands.literal("balance").requires(KothCommands::isPlayer).executes(byPlayer(this::balance)))
                 .then(Commands.literal("join").requires(KothCommands::isPlayer).executes(byPlayer(joining::join)))
                 .build();
@@ -125,6 +123,15 @@ public final class KothCommands {
                         .then(box("colours", Box.COLOURS))
                         .then(Commands.literal("spawn").executes(byPlayer(setup::spawn))))
                 .then(Commands.literal("shop")
+                        .executes(context -> {
+                            // The editor is a menu; the console gets the list instead.
+                            if (context.getSource().getExecutor() instanceof Player player) {
+                                shopMenus.openEditor(player);
+                            } else {
+                                shopEditor.list(context.getSource().getSender());
+                            }
+                            return Command.SINGLE_SUCCESS;
+                        })
                         .then(Commands.literal("add").requires(KothCommands::isPlayer).then(newId().then(cost().executes(context -> {
                             shopEditor.add((Player) context.getSource().getExecutor(), idOf(context), costOf(context));
                             return Command.SINGLE_SUCCESS;
@@ -139,10 +146,12 @@ public final class KothCommands {
                             shopEditor.cost(context.getSource().getSender(), idOf(context), costOf(context));
                             return Command.SINGLE_SUCCESS;
                         }))))
-                        .then(Commands.literal("slot").then(entryId().then(Commands.argument("slot", IntegerArgumentType.integer(0, 53)).executes(context -> {
-                            shopEditor.slot(context.getSource().getSender(), idOf(context), IntegerArgumentType.getInteger(context, "slot"));
-                            return Command.SINGLE_SUCCESS;
-                        }))))
+                        .then(Commands.literal("slot").then(entryId().then(Commands.argument("page", IntegerArgumentType.integer(1))
+                                .then(Commands.argument("slot", IntegerArgumentType.integer(0, PageLayout.CONTENT_SLOTS - 1)).executes(context -> {
+                                    shopEditor.place(context.getSource().getSender(), idOf(context),
+                                            new Place(IntegerArgumentType.getInteger(context, "page") - 1, IntegerArgumentType.getInteger(context, "slot")));
+                                    return Command.SINGLE_SUCCESS;
+                                })))))
                         .then(Commands.literal("remove").then(entryId().executes(context -> {
                             shopEditor.remove(context.getSource().getSender(), idOf(context));
                             return Command.SINGLE_SUCCESS;
@@ -164,17 +173,6 @@ public final class KothCommands {
             } else {
                 messages.send(sender, status.running().isPresent() ? "status.active" : "status.inactive", resolver);
             }
-        }
-    }
-
-    private void openShop(Player player) {
-        var current = shop.get();
-        if (current == Shop.NONE) {
-            messages.send(player, "shop.unavailable");
-        } else if (players.isInMatch(player.getUniqueId())) {
-            messages.send(player, "shop.in-match");
-        } else {
-            player.openInventory(ShopMenu.create(current, player, messages, savedItems, logger));
         }
     }
 

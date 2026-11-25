@@ -1,30 +1,30 @@
 package io.github.tst_038.koth.shop;
 
 import io.github.tst_038.koth.config.FileEdits.Refusal;
-import java.util.HashSet;
+import io.github.tst_038.minigami.api.menu.Place;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
+import java.util.Optional;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.configuration.ConfigurationSection;
 
 /**
- * The changes {@code /kotha shop} makes to the text of {@code shop.yml}, keeping its shape: each refuses with a
- * {@link Refusal} rather than leave the file worse. Nothing else in the file is touched.
+ * The changes {@code /kotha shop} and the shop editor make to the text of {@code shop.yml}, keeping its shape: each
+ * refuses with a {@link Refusal} rather than leave the file worse. Nothing else in the file is touched.
  */
 final class ShopFile {
 
     private ShopFile() {
     }
 
-    /** Adds an entry at the first free slot. */
-    static void add(ConfigurationSection file, String id, int cost, Map<String, Object> icon, Map<String, Object> reward) {
+    /** Adds an entry at the place, which must not be another entry's, or without one, so it takes the next free slot. */
+    static void add(ConfigurationSection file, String id, int cost, Map<String, Object> icon, Map<String, Object> reward, Optional<Place> place) {
         if (file.contains(path(id))) {
             throw new Refusal("shop-edit.exists", Placeholder.unparsed("id", id));
         }
-        int slot = firstFree(file).orElseThrow(() -> new Refusal("shop-edit.full"));
+        place.ifPresent(wanted -> refuseTaken(file, id, wanted));
         var entry = file.createSection(path(id));
-        entry.set("slot", slot);
+        place.ifPresent(wanted -> put(entry, wanted));
         entry.set("cost", cost);
         entry.createSection("icon", icon);
         entry.set("rewards", List.of(reward));
@@ -34,20 +34,27 @@ final class ShopFile {
         entry(file, id).set("cost", cost);
     }
 
-    /** Moves the entry to the slot, which must be in the menu and not another entry's. */
-    static void slot(ConfigurationSection file, String id, int slot) {
+    /** Raises the cost by {@code change}, or lowers it, though not below 1. @return the new cost */
+    static int addCost(ConfigurationSection file, String id, int change) {
         var entry = entry(file, id);
-        int last = rows(file) * 9 - 1;
-        if (slot > last) {
-            throw new Refusal("shop-edit.slot-outside", Placeholder.unparsed("last", String.valueOf(last)));
-        }
-        var entries = file.getConfigurationSection("entries");
-        for (String other : entries.getKeys(false)) {
-            if (!other.equals(id) && entries.getInt(other + ".slot", -1) == slot) {
-                throw new Refusal("shop-edit.slot-taken", Placeholder.unparsed("id", other));
-            }
-        }
-        entry.set("slot", slot);
+        int cost = Math.clamp((long) entry.getInt("cost", 1) + change, 1, Integer.MAX_VALUE);
+        entry.set("cost", cost);
+        return cost;
+    }
+
+    /** Moves the entry to the place, which must not be another entry's. */
+    static void place(ConfigurationSection file, String id, Place place) {
+        var entry = entry(file, id);
+        refuseTaken(file, id, place);
+        put(entry, place);
+    }
+
+    /** Puts each entry where the other one is. */
+    static void swap(ConfigurationSection file, String id, Place place, String other, Place otherPlace) {
+        var entry = entry(file, id);
+        var second = entry(file, other);
+        put(entry, otherPlace);
+        put(second, place);
     }
 
     static void remove(ConfigurationSection file, String id) {
@@ -55,20 +62,24 @@ final class ShopFile {
         file.set(path(id), null);
     }
 
-    /** The lowest slot of the menu no entry uses. */
-    static OptionalInt firstFree(ConfigurationSection file) {
-        var used = new HashSet<Integer>();
+    private static void refuseTaken(ConfigurationSection file, String id, Place place) {
         var entries = file.getConfigurationSection("entries");
-        if (entries != null) {
-            entries.getKeys(false).forEach(id -> used.add(entries.getInt(id + ".slot", -1)));
+        if (entries == null) {
+            return;
         }
-        int size = rows(file) * 9;
-        for (int slot = 0; slot < size; slot++) {
-            if (!used.contains(slot)) {
-                return OptionalInt.of(slot);
+        for (String other : entries.getKeys(false)) {
+            var entry = entries.getConfigurationSection(other);
+            if (!other.equals(id) && entry != null && entry.contains("slot")
+                    && entry.getInt("slot") == place.slot() && entry.getInt("page", 1) - 1 == place.page()) {
+                throw new Refusal("shop-edit.slot-taken", Placeholder.unparsed("id", other));
             }
         }
-        return OptionalInt.empty();
+    }
+
+    /** Page 1, the usual one, is left out. */
+    private static void put(ConfigurationSection entry, Place place) {
+        entry.set("page", place.page() == 0 ? null : place.page() + 1);
+        entry.set("slot", place.slot());
     }
 
     private static ConfigurationSection entry(ConfigurationSection file, String id) {
@@ -77,11 +88,6 @@ final class ShopFile {
             throw new Refusal("shop-edit.unknown", Placeholder.unparsed("id", id));
         }
         return entry;
-    }
-
-    /** As read, clamped to what a menu can have; a wrong value is reported by the reload anyway. */
-    private static int rows(ConfigurationSection file) {
-        return Math.clamp(file.getInt("rows", 6), 1, 6);
     }
 
     private static String path(String id) {

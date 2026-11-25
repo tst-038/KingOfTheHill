@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -43,7 +44,8 @@ public final class Checkout {
         this.logger = logger;
     }
 
-    public void buy(Player player, ShopEntry entry) {
+    /** @return completes on the server thread once the purchase is settled or turned down */
+    public CompletableFuture<Void> buy(Player player, ShopEntry entry) {
         var id = player.getUniqueId();
         if (players.isInMatch(id)) {
             messages.send(player, "shop.in-match");
@@ -54,7 +56,7 @@ public final class Checkout {
         } else {
             var name = player.getName();
             // The player isn't kept across the storage round trip; settle looks them up again.
-            wallet.spend(id, entry.cost()).handleAsync((left, failure) -> {
+            return wallet.spend(id, entry.cost()).<Void>handleAsync((left, failure) -> {
                 buying.remove(id);
                 if (failure != null) {
                     logger.log(Level.SEVERE, "Could not take " + entry.cost() + " points from " + name + " for " + entry.id(), failure);
@@ -71,6 +73,7 @@ public final class Checkout {
                 }
             });
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     /** The points are taken when {@code left} is present: deliver, or give them back. */

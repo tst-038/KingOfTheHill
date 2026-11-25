@@ -6,9 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.koth.config.FileEdits.Refusal;
+import io.github.tst_038.minigami.api.menu.Place;
 import io.github.tst_038.minigami.api.reward.RewardReader;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,6 @@ class ShopFileTest {
 
     private static final String SHOP = """
             title: "Shop"
-            rows: 1
             entries:
               diamonds:
                 slot: 0
@@ -27,12 +28,21 @@ class ShopFileTest {
                 rewards:
                   - { item: diamond, amount: 8 }
               anvil:
+                page: 2
                 slot: 2
                 cost: 5000
                 icon: { item: anvil, name: "/anvil" }
                 rewards:
                   - { command: "lp user %player% permission set essentials.anvil true", name: "/anvil" }
+              cookie:
+                cost: 1
+                icon: { item: cookie, name: "Cookie" }
+                rewards:
+                  - { item: cookie }
             """;
+
+    private static final Map<String, Object> ICON = Map.of("saved", "koth-key", "name", "Key");
+    private static final Map<String, Object> REWARD = Map.of("saved", "koth-key", "amount", 2);
 
     private static YamlConfiguration file() throws Exception {
         var file = new YamlConfiguration();
@@ -52,45 +62,82 @@ class ShopFileTest {
     }
 
     @Test
-    void anAddedEntryTakesTheFirstFreeSlotAndReadsBack() throws Exception {
+    void anEntryAddedWithoutAPlaceTakesTheNextFreeSlot() throws Exception {
         var file = file();
-        ShopFile.add(file, "key", 50, Map.of("saved", "koth-key", "name", "Key"), Map.of("saved", "koth-key", "amount", 2));
+        ShopFile.add(file, "key", 50, ICON, REWARD, Optional.empty());
         var entry = readBack(file, "key");
-        assertEquals(1, entry.slot());
+        assertEquals(Optional.empty(), entry.place());
         assertEquals(50, entry.cost());
         assertEquals("Key", entry.name());
     }
 
     @Test
-    void anAddRefusesAnIdInUseOrAFullMenu() throws Exception {
+    void anEntryAddedAtAPlaceKeepsIt() throws Exception {
         var file = file();
-        refused("shop-edit.exists", () -> ShopFile.add(file, "anvil", 1, Map.of(), Map.of()));
-        for (int slot = 0; slot < 9; slot++) {
-            file.set("entries.e" + slot + ".slot", slot);
-        }
-        refused("shop-edit.full", () -> ShopFile.add(file, "key", 1, Map.of(), Map.of()));
+        ShopFile.add(file, "key", 50, ICON, REWARD, Optional.of(new Place(2, 7)));
+        assertEquals(Optional.of(new Place(2, 7)), readBack(file, "key").place());
     }
 
     @Test
-    void costSlotAndRemoveChangeOnlyTheirEntry() throws Exception {
+    void anAddRefusesAnIdInUseOrAnotherEntrysPlace() throws Exception {
+        var file = file();
+        refused("shop-edit.exists", () -> ShopFile.add(file, "anvil", 1, ICON, REWARD, Optional.empty()));
+        refused("shop-edit.slot-taken", () -> ShopFile.add(file, "key", 1, ICON, REWARD, Optional.of(new Place(1, 2))));
+    }
+
+    @Test
+    void aMoveToPageOneLeavesThePageOut() throws Exception {
+        var file = file();
+        ShopFile.place(file, "anvil", new Place(0, 8));
+        assertFalse(file.contains("entries.anvil.page"));
+        assertEquals(Optional.of(new Place(0, 8)), readBack(file, "anvil").place());
+        ShopFile.place(file, "cookie", new Place(3, 1));
+        assertEquals(4, file.getInt("entries.cookie.page"));
+    }
+
+    @Test
+    void aMoveRefusesAnotherEntrysPlaceButNotItsOwn() throws Exception {
+        var file = file();
+        refused("shop-edit.slot-taken", () -> ShopFile.place(file, "anvil", new Place(0, 0)));
+        ShopFile.place(file, "anvil", new Place(1, 2));
+        // The same slot on another page is free.
+        ShopFile.place(file, "cookie", new Place(1, 0));
+    }
+
+    @Test
+    void aSwapGivesEachEntryTheOthersPlace() throws Exception {
+        var file = file();
+        // The cookie has no slot; it is swapped from where it showed.
+        ShopFile.swap(file, "diamonds", new Place(0, 0), "cookie", new Place(0, 1));
+        assertEquals(Optional.of(new Place(0, 1)), readBack(file, "diamonds").place());
+        assertEquals(Optional.of(new Place(0, 0)), readBack(file, "cookie").place());
+    }
+
+    @Test
+    void aCostChangeStopsAtOne() throws Exception {
+        var file = file();
+        assertEquals(310, ShopFile.addCost(file, "diamonds", 10));
+        assertEquals(1, ShopFile.addCost(file, "diamonds", -1000));
+        assertEquals(1, readBack(file, "diamonds").cost());
+    }
+
+    @Test
+    void costAndRemoveChangeOnlyTheirEntry() throws Exception {
         var file = file();
         ShopFile.cost(file, "anvil", 10);
-        ShopFile.slot(file, "anvil", 8);
-        var anvil = readBack(file, "anvil");
-        assertEquals(10, anvil.cost());
-        assertEquals(8, anvil.slot());
+        assertEquals(10, readBack(file, "anvil").cost());
         ShopFile.remove(file, "anvil");
         assertFalse(file.contains("entries.anvil"));
         assertTrue(file.contains("entries.diamonds"));
     }
 
     @Test
-    void anUnknownIdOrABadSlotIsRefused() throws Exception {
+    void anUnknownIdIsRefused() throws Exception {
         var file = file();
         refused("shop-edit.unknown", () -> ShopFile.cost(file, "nope", 1));
+        refused("shop-edit.unknown", () -> ShopFile.addCost(file, "nope", 1));
+        refused("shop-edit.unknown", () -> ShopFile.place(file, "nope", new Place(0, 5)));
+        refused("shop-edit.unknown", () -> ShopFile.swap(file, "anvil", new Place(1, 2), "nope", new Place(0, 5)));
         refused("shop-edit.unknown", () -> ShopFile.remove(file, "nope"));
-        refused("shop-edit.slot-outside", () -> ShopFile.slot(file, "anvil", 9));
-        refused("shop-edit.slot-taken", () -> ShopFile.slot(file, "anvil", 0));
-        ShopFile.slot(file, "anvil", 2);
     }
 }

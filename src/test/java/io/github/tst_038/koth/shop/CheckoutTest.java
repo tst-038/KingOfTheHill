@@ -2,6 +2,7 @@ package io.github.tst_038.koth.shop;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.github.tst_038.minigami.api.item.ItemLook;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.reward.Reward;
 import io.github.tst_038.minigami.core.storage.Migrations;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -113,7 +115,8 @@ class CheckoutTest {
     }
 
     private ShopEntry entry(int cost, Reward... rewards) {
-        return new ShopEntry("thing", 0, cost, new ShopEntry.Icon.Plain(Material.DIAMOND, "Thing", List.of()), List.of(rewards), Optional.of("owned.thing"));
+        return new ShopEntry("thing", Optional.empty(), cost,
+                new ShopEntry.Icon.Plain(Material.DIAMOND, "Thing", List.of(), OptionalInt.empty(), ItemLook.NONE), List.of(rewards), Optional.of("owned.thing"));
     }
 
     /** Storage keeps the order, so once the second read is back, everything the first one set going has run. */

@@ -108,8 +108,9 @@ daylight saving time, such as UTC.
 
 ## shop.yml
 
-The shop is a chest menu. Each entry has a `slot`, a `cost` in points, an `icon`, and `rewards`, all of which are
-given on purchase:
+The shop is a double chest: five rows of entries a page, and a bar with arrows to the other pages and the player's own
+head showing their points. Each entry has a `cost` in points, an `icon`, and `rewards`, all of which are given on
+purchase:
 
 - `{ item: diamond, amount: 8 }`, an item;
 - `{ saved: <name>, amount, name }`, an item saved in MiniGami with `/mga loot save <name>`, such as a crate key;
@@ -119,16 +120,28 @@ The `icon` is either `{ item: <item>, name, lore }`, with the `name` required, o
 item saved in MiniGami with `/mga loot save <name>`. A saved icon shows the item as saved; give a `name` or `lore` to
 replace the saved ones. Give one of `item` and `saved`, not both. The shop adds the cost line, and the owned line, under
 the item's own lore. If the saved item is deleted after the shop was read, the entry shows a barrier and a warning is
-logged each time the shop is opened.
+logged each time the shop is opened. Either icon may also have `amount` (how many it shows), `glow: true` (the
+enchantment glint without an enchantment), `item-model: <key>` (another item's model or one from a resource pack, such
+as `myserver:ruby`) and `custom-model-data: <number>`; on a saved icon these go on top of how it was saved.
+
+An entry goes where its `page` (from 1, default 1) and `slot` (0 to 44) say; two entries in one place are a problem.
+Entries without a `slot` fill the free slots in the order of the file, adding pages as needed.
 
 An entry with `owned-permission` can't be bought again by someone who has that permission. Points are taken first,
 and given back if the rewards can't be delivered. Run `/kotha reload` after editing.
 
 The `/kotha shop` commands edit the file for you, keeping its comments, and reload. `/kotha shop add <id> <cost>` sells
-the item you hold: it is saved in MiniGami as `koth-<id>`, and the entry gets the first free slot, that item as its icon,
+the item you hold: it is saved in MiniGami as `koth-<id>`, and the entry gets the next free slot, that item as its icon,
 named as the item is, and the item, as many as you hold, as its reward. `/kotha shop command <id> <cost> <command...>`
 sells a command instead, with the held item saved as the icon. Change the rest, such as `lore` or `owned-permission`, in
 the file.
+
+`/kotha shop` on its own opens the shop editor: the shop as players see it, where clicks change `shop.yml` the same way
+(nothing is bought there). Left click an entry to pick it up, then left click an empty slot to move it there, or
+another entry to swap the two; left click it again to put it back. Shift-left and shift-right click raise and lower its
+cost by `editor.cost-step` (default 10), right click twice removes it. To add an entry, hold the item before opening
+the editor and left click an empty slot: it is sold as with `/kotha shop add`, for `editor.new-cost` (default 100),
+under an id made from the item's type. Each entry's lore shows how, and the book in the bar says how to add one.
 
 ## Messages
 
@@ -162,10 +175,11 @@ For staff, with `koth.admin`:
 | `/kotha setup point set\|select\|show` | Set the hill to your WorldEdit selection, select it with WorldEdit, or outline it in particles for a few seconds |
 | `/kotha setup colours set\|select\|show` | The same for the box of blocks that change colour |
 | `/kotha setup spawn` | Set the spawn of `/koth join` to where you stand |
+| `/kotha shop` | Open the shop editor (from the console: list the entries) |
 | `/kotha shop add <id> <cost>` | Sell the item you hold, saved in MiniGami as `koth-<id>` |
 | `/kotha shop command <id> <cost> <command...>` | Sell a command, run from the console with `%player%` being the buyer; the item you hold is its icon and gives it its name |
 | `/kotha shop cost <id> <cost>` | Change what an entry costs |
-| `/kotha shop slot <id> <slot>` | Move an entry to another free slot of the menu |
+| `/kotha shop slot <id> <page> <slot>` | Move an entry to a slot (0-44) of a page (from 1) no other entry has |
 | `/kotha shop remove <id>` | Remove an entry; its saved item stays, for `/mga loot delete koth-<id>` |
 | `/kotha shop list` | List the entries of the shop in use |
 

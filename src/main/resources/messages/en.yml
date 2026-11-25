@@ -42,6 +42,9 @@ join:
 shop:
   cost-line: "<gray>Cost: <gold>%cost%</gold> points"
   owned-line: "<green>You have this already"
+  # The head in the middle of the shop's bar. %points%
+  balance: "<gold>Your balance: %points% points"
+  balance-loading: "<gray>Your balance: loading…"
   # %entry%: its icon name, %cost%
   bought: "%prefix%<green>You bought %entry% for <gold>%cost%</gold> points."
   # %points%: their balance
@@ -52,6 +55,10 @@ shop:
   unavailable: "%prefix%<red>The shop isn't set up; staff can see why in the log."
   failed: "%prefix%<red>Something went wrong; you kept your points."
   partly-failed: "%prefix%<red>Part of it couldn't be given; staff can see it in the log."
+# The arrows of a paged menu. %page%: the page they go to, %pages%: how many there are
+menu:
+  previous: "<yellow>« Page %page% of %pages%"
+  next: "<yellow>Page %page% of %pages% »"
 admin:
   reload-done: "%prefix%<green>Reloaded."
   # %problem%
@@ -100,18 +107,31 @@ shop-edit:
   no-item: "%prefix%<red>Hold the item for the entry."
   exists: "%prefix%<red>The shop has an entry <white>%id%</white> already."
   unknown: "%prefix%<red>The shop has no entry <white>%id%</white>."
-  full: "%prefix%<red>The shop has no free slot; raise rows in shop.yml or remove an entry."
-  # %last%: the last slot of the menu
-  slot-outside: "%prefix%<red>The menu's slots go from 0 to %last%."
   slot-taken: "%prefix%<red>That slot is <white>%id%</white>'s."
   # %cost%
   added: "%prefix%<green>Added <white>%id%</white> for <gold>%cost%</gold> points, its item saved as <white>%saved%</white>."
   item-not-written: "%prefix%<red>Could not write the saved item <white>%saved%</white>; it is lost on a restart. See the log."
   cost-set: "%prefix%<green><white>%id%</white> now costs <gold>%cost%</gold> points."
-  # %slot%
-  slot-set: "%prefix%<green>Moved <white>%id%</white> to slot %slot%."
+  # %page%, %slot%
+  slot-set: "%prefix%<green>Moved <white>%id%</white> to page %page%, slot %slot%."
+  # %other%: the other entry
+  swapped: "%prefix%<green><white>%id%</white> and <white>%other%</white> swapped places."
   removed: "%prefix%<green>Removed <white>%id%</white>. Its item stays saved as <white>%saved%</white>; /mga loot delete %saved% deletes it."
   list-header: "%prefix%<gray>Shop entries:"
-  # %slot%, %cost%, %entry%: its name
-  list-entry: "<dark_gray>-</dark_gray> <white>%id%</white> <gray>slot %slot%, <gold>%cost%</gold> points:</gray> %entry%"
+  # %page%, %slot%: where it shows, %cost%, %entry%: its name
+  list-entry: "<dark_gray>-</dark_gray> <white>%id%</white> <gray>page %page% slot %slot%, <gold>%cost%</gold> points:</gray> %entry%"
   list-empty: "%prefix%<gray>The shop in use has no entries."
+  not-loaded: "%prefix%<red>shop.yml isn't in use, so there is nothing to edit; fix it and run /kotha reload."
+  # The shop editor, /kotha shop. Its entries get these lines under their own.
+  menu-title: "<dark_gray>Shop editor"
+  menu-move: "<yellow>Left click</yellow> <gray>to pick up and move"
+  # %step%: how much the cost changes
+  menu-cost: "<yellow>Shift-left/right</yellow> <gray>cost + / - %step%"
+  menu-remove: "<yellow>Right click</yellow> <gray>to remove"
+  menu-picked: "<green>Picked up: click a slot or entry to put it there"
+  menu-confirm-remove: "<red>Right click again to remove it"
+  menu-id: "<dark_gray>id: %id%"
+  menu-help: "<gold>Shop editor"
+  # %cost%: what a new entry costs
+  menu-help-add: "<gray>Click an empty slot to sell the item in your hand for %cost% points"
+  menu-help-move: "<gray>Hover over an entry to see how to change it"

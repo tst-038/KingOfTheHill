@@ -28,7 +28,7 @@ import io.github.tst_038.koth.sidebar.KothSidebar;
 import io.github.tst_038.koth.shop.Checkout;
 import io.github.tst_038.koth.shop.Shop;
 import io.github.tst_038.koth.shop.ShopEditor;
-import io.github.tst_038.koth.shop.ShopListener;
+import io.github.tst_038.koth.shop.ShopMenus;
 import io.github.tst_038.koth.shop.ShopReader;
 import io.github.tst_038.koth.stats.StatBuffer;
 import io.github.tst_038.koth.status.KothPlaceholders;
@@ -64,6 +64,7 @@ public final class KothPlugin extends JavaPlugin {
     private KothSidebar sidebar;
     private RewardReader rewards;
     private MiniGamiSavedItems savedItems;
+    private ShopMenus shopMenus;
     /** Takes our PlaceholderAPI expansion away; does nothing when PlaceholderAPI isn't there. */
     private Runnable unregisterPlaceholders = () -> { };
     private volatile Shop shop = Shop.NONE;
@@ -103,7 +104,6 @@ public final class KothPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CombatListener(runtime, buffer, players), this);
         getServer().getPluginManager().registerEvents(new RespawnListener(runtime::config), this);
         rewards = new RewardReader(savedItems);
-        getServer().getPluginManager().registerEvents(new ShopListener(new Checkout(getServer(), messages, wallet, players, serverThread, getLogger())), this);
         getServer().getOnlinePlayers().forEach(player -> wallet.load(player.getUniqueId()));
         sidebar = new KothSidebar(this, boards, messages, players, clock);
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
@@ -116,9 +116,11 @@ public final class KothPlugin extends JavaPlugin {
         Consumer<Audience> reload = requester -> loadConfig(files, messages, requester);
         Executor fileIo = task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run());
         var edits = new FileEdits(getDataPath(), messages, fileIo, serverThread, reload, getLogger());
-        var commands = new KothCommands(getServer(), messages, runtime, joining, wallet, players, this::shop, savedItems, reload,
-                new KothSetup(setup, edits, messages, runtime::config),
-                new ShopEditor(edits, messages, savedItems, this::shop, serverThread, getLogger()), clock, serverThread, getLogger());
+        var shopEditor = new ShopEditor(edits, messages, savedItems, this::shop, serverThread, getLogger());
+        var checkout = new Checkout(getServer(), messages, wallet, players, serverThread, getLogger());
+        shopMenus = new ShopMenus(getServer(), this::shop, messages, savedItems, wallet, players, checkout, shopEditor, KothCommands.ADMIN, getLogger());
+        var commands = new KothCommands(getServer(), messages, runtime, joining, wallet, this::shop, reload,
+                new KothSetup(setup, edits, messages, runtime::config), shopEditor, shopMenus, clock, serverThread, getLogger());
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(commands.playerRoot(), "King of the Hill: status, shop, points and going there");
             event.registrar().register(commands.adminRoot(), "Manage King of the Hill");
@@ -158,6 +160,7 @@ public final class KothPlugin extends JavaPlugin {
                 var loadedShop = ShopReader.load(shopText, rewards, savedItems);
                 problems.addAll(loadedShop.problems());
                 loadedShop.shop().ifPresent(read -> shop = read);
+                shopMenus.refreshOpen();
                 problems.forEach(problem -> getLogger().warning(problem.toString()));
                 if (loaded.config().isEmpty()) {
                     getLogger().warning(hadConfig ? "KOTH keeps the config.yml it had, as the new one has problems."

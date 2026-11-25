@@ -1,28 +1,37 @@
-# The /koth shop. Each entry costs points and gives its rewards, all of them:
+# The /koth shop, a double chest: five rows of entries (slots 0 to 44) a page, and a bar with the page arrows and your balance.
+# Each entry costs points and gives its rewards, all of them:
 #   { item: <item>, amount, name }        an item
 #   { saved: <name>, amount, name }       an item saved in MiniGami with /mga loot save <name>, such as a crate key
 #   { command: "...", name: "..." }       run from the console, %player% being the buyer
 # icon: { item: <item>, name, lore }   an item, with its name (required) and extra lines
 #       { saved: <name>, name, lore }  an item saved in MiniGami; name and lore replace the ones it was saved with
+#   Either may also have amount (how many it shows), glow: true (the enchantment glint), item-model: <key> (another
+#   item's model or a resource pack's, such as myserver:ruby) and custom-model-data: <number>; on a saved item these
+#   go on top of how it was saved.
 # The shop adds the cost (and, when owned-permission is held, an owned line) under the icon's lore.
 # owned-permission: who already has it can't buy the entry again.
+# page (from 1, default 1) and slot (0 to 44): where the entry goes. Leave slot out and it takes the next free slot,
+# in the order of this file, adding pages as needed.
 title: "<dark_gray>KOTH shop"
-rows: 3
+# The shop editor (/kotha shop): what an entry added there costs, and how much a shift-click changes a cost.
+editor:
+  new-cost: 100
+  cost-step: 10
 entries:
   diamonds:
-    slot: 11
+    slot: 20
     cost: 300
-    icon: { item: diamond, name: "<aqua>8 diamonds" }
+    icon: { item: diamond, name: "<aqua>8 diamonds", amount: 8 }
     rewards:
       - { item: diamond, amount: 8 }
   # crate-key:
-  #   slot: 13
+  #   slot: 22
   #   cost: 500
-  #   icon: { saved: koth-crate-key }
+  #   icon: { saved: koth-crate-key, glow: true }
   #   rewards:
   #     - { saved: koth-crate-key, name: "<gold>KOTH crate key" }
   anvil:
-    slot: 15
+    slot: 24
     cost: 5000
     owned-permission: essentials.anvil
     icon: { item: anvil, name: "<yellow>/anvil", lore: ["<gray>Open an anvil anywhere"] }

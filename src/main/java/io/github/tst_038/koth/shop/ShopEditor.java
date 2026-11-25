@@ -3,15 +3,21 @@ package io.github.tst_038.koth.shop;
 import io.github.tst_038.koth.config.FileEdits;
 import io.github.tst_038.koth.config.KothFiles;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
+import io.github.tst_038.minigami.api.menu.PageLayout;
+import io.github.tst_038.minigami.api.menu.Place;
 import io.github.tst_038.minigami.api.message.Messages;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -20,8 +26,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * {@code /kotha shop}: changes {@code shop.yml} by command, off the server thread and keeping its comments, then reloads
- * as {@code /kotha reload} does. An entry's item is saved in MiniGami as {@code koth-<id>}. Server thread only.
+ * {@code /kotha shop} and the shop editor: change {@code shop.yml} off the server thread, keeping its comments, then
+ * reload as {@code /kotha reload} does. An entry's item is saved in MiniGami as {@code koth-<id>}. Server thread only.
  */
 public final class ShopEditor {
 
@@ -46,6 +52,15 @@ public final class ShopEditor {
         return "koth-" + id;
     }
 
+    /** {@code base}, or the first of {@code base-2}, {@code base-3}, ... that isn't taken. */
+    static String freeId(String base, Predicate<String> taken) {
+        var id = base;
+        for (int n = 2; taken.test(id); n++) {
+            id = base + "-" + n;
+        }
+        return id;
+    }
+
     /** The ids of the shop in use, for completion. */
     public List<String> ids() {
         return shop.get().entries().stream().map(ShopEntry::id).toList();
@@ -53,6 +68,21 @@ public final class ShopEditor {
 
     /** Sells the held item: saved as the icon and given as the reward, as many as are held. */
     public void add(Player player, String id, int cost) {
+        add(player, id, cost, Optional.empty());
+    }
+
+    /**
+     * Sells the held item at the place, for the shop's new-entry cost, under an id made from the item's type that no
+     * entry or saved item has yet.
+     */
+    public void addHeld(Player player, Place place) {
+        var ids = ids();
+        var base = player.getInventory().getItemInMainHand().getType().getKey().getKey();
+        var id = freeId(base, candidate -> ids.contains(candidate) || savedItems.has(savedName(candidate)));
+        add(player, id, shop.get().newCost(), Optional.of(place));
+    }
+
+    private void add(Player player, String id, int cost, Optional<Place> place) {
         withHeldItem(player, id, (item, name) -> {
             var reward = new LinkedHashMap<String, Object>();
             reward.put("saved", savedName(id));
@@ -60,7 +90,7 @@ public final class ShopEditor {
                 reward.put("amount", item.getAmount());
             }
             return reward;
-        }, cost);
+        }, cost, place);
     }
 
     /** Sells a command run from the console; the held item, saved, is the icon and gives the entry its name. */
@@ -70,7 +100,7 @@ public final class ShopEditor {
             reward.put("command", command);
             reward.put("name", name);
             return reward;
-        }, cost);
+        }, cost, Optional.empty());
     }
 
     public void cost(Audience sender, String id, int cost) {
@@ -78,9 +108,25 @@ public final class ShopEditor {
                 Placeholder.unparsed("id", id), Placeholder.unparsed("cost", String.valueOf(cost)));
     }
 
-    public void slot(Audience sender, String id, int slot) {
-        edits.editAndReload(sender, KothFiles.SHOP, file -> ShopFile.slot(file, id, slot), "shop-edit.slot-set",
-                Placeholder.unparsed("id", id), Placeholder.unparsed("slot", String.valueOf(slot)));
+    /** Raises the cost by {@code change}, or lowers it, though not below 1; counted from the file, so quick clicks add up. */
+    public void changeCost(Audience sender, String id, int change) {
+        var cost = new AtomicInteger();
+        edits.edit(sender, KothFiles.SHOP, file -> cost.set(ShopFile.addCost(file, id, change)), file -> List.of()).thenAccept(written -> {
+            if (written) {
+                edits.done(sender, "shop-edit.cost-set", Placeholder.unparsed("id", id), Placeholder.unparsed("cost", String.valueOf(cost.get())));
+            }
+        });
+    }
+
+    public void place(Audience sender, String id, Place place) {
+        edits.editAndReload(sender, KothFiles.SHOP, file -> ShopFile.place(file, id, place), "shop-edit.slot-set",
+                Placeholder.unparsed("id", id), page(place), slot(place));
+    }
+
+    /** Puts each entry at the other's place, as they were shown. */
+    public void swap(Audience sender, String id, Place place, String other, Place otherPlace) {
+        edits.editAndReload(sender, KothFiles.SHOP, file -> ShopFile.swap(file, id, place, other, otherPlace), "shop-edit.swapped",
+                Placeholder.unparsed("id", id), Placeholder.unparsed("other", other));
     }
 
     /** Removes the entry only; its saved item stays, as other things may use it. */
@@ -89,6 +135,7 @@ public final class ShopEditor {
                 Placeholder.unparsed("id", id), Placeholder.unparsed("saved", savedName(id)));
     }
 
+    /** The entries in menu order, each with where it shows, placed or not. */
     public void list(Audience sender) {
         var entries = shop.get().entries();
         if (entries.isEmpty()) {
@@ -96,9 +143,23 @@ public final class ShopEditor {
             return;
         }
         messages.send(sender, "shop-edit.list-header");
-        entries.stream().sorted(Comparator.comparingInt(ShopEntry::slot)).forEach(entry -> messages.send(sender, "shop-edit.list-entry",
-                Placeholder.unparsed("id", entry.id()), Placeholder.unparsed("slot", String.valueOf(entry.slot())),
-                Placeholder.unparsed("cost", String.valueOf(entry.cost())), Placeholder.component("entry", messages.parse(entry.name()))));
+        var layout = PageLayout.of(entries.stream().map(ShopEntry::place).toList());
+        IntStream.range(0, entries.size()).boxed()
+                .sorted(Comparator.comparing((Integer i) -> layout.placeOf(i).page()).thenComparing(i -> layout.placeOf(i).slot()))
+                .forEach(i -> {
+                    var entry = entries.get(i);
+                    messages.send(sender, "shop-edit.list-entry", Placeholder.unparsed("id", entry.id()), page(layout.placeOf(i)),
+                            slot(layout.placeOf(i)), Placeholder.unparsed("cost", String.valueOf(entry.cost())),
+                            Placeholder.component("entry", messages.parse(entry.name())));
+                });
+    }
+
+    private static TagResolver page(Place place) {
+        return Placeholder.unparsed("page", String.valueOf(place.page() + 1));
+    }
+
+    private static TagResolver slot(Place place) {
+        return Placeholder.unparsed("slot", String.valueOf(place.slot()));
     }
 
     private interface Reward {
@@ -106,7 +167,7 @@ public final class ShopEditor {
     }
 
     /** Writes the entry, then saves the held item for it, so a refused entry never replaces a saved item. */
-    private void withHeldItem(Player player, String id, Reward reward, int cost) {
+    private void withHeldItem(Player player, String id, Reward reward, int cost, Optional<Place> place) {
         var saved = savedName(id);
         if (!MiniGamiSavedItems.isValidName(saved)) {
             messages.send(player, "shop-edit.bad-id");
@@ -125,7 +186,7 @@ public final class ShopEditor {
         icon.put("name", name);
         var given = reward.of(item, name);
         TagResolver[] tags = {Placeholder.unparsed("id", id), Placeholder.unparsed("cost", String.valueOf(cost)), Placeholder.unparsed("saved", saved)};
-        edits.edit(player, KothFiles.SHOP, file -> ShopFile.add(file, id, cost, icon, given), file -> List.of()).thenAccept(written -> {
+        edits.edit(player, KothFiles.SHOP, file -> ShopFile.add(file, id, cost, icon, given, place), file -> List.of()).thenAccept(written -> {
             if (written) {
                 savedItems.save(saved, item).whenCompleteAsync((ignored, failure) -> {
                     if (failure != null) {
