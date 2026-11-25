@@ -56,6 +56,11 @@ public final class Hill {
         return capture.taker();
     }
 
+    /** Seconds the holder has held it since taking it; 0 while nobody does. */
+    public long heldSeconds() {
+        return heldSeconds;
+    }
+
     /** Seconds a player must stand on it alone to take it. */
     public int captureSeconds() {
         return captureSeconds;

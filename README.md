@@ -57,7 +57,7 @@ Players who are in a MiniGami match can't join KOTH, shop or receive purchases; 
 | `point` | The hill's `region`, `capture-seconds` to take it, `colour-blocks`, a box whose dyed blocks change colour on each capture (left out: the hill and the layer under it), and `neutral-colour` for while nobody holds the hill and KOTH isn't running |
 | `scoring` | `points` for the holder every `every-seconds`, wherever they are in the world |
 | `restrictions` | `min-online`: a window waits, with an announcement, while fewer players are online, and starts as soon as there are enough; one that ends first is skipped. A forced start ignores it |
-| `sidebar` | The title and lines shown to players in the KOTH world, for when it runs, when it waits for players and when it doesn't. It goes through MiniGami's boards, so a match's sidebar comes first and players get their own board back on leaving the world |
+| `sidebar` | The title and lines shown to players in the KOTH world, for when it runs, when it waits for players and when it doesn't; `%balance%` there is each player's own points. It goes through MiniGami's boards, so a match's sidebar comes first and players get their own board back on leaving the world |
 
 A holder who leaves the world or the server drops the hill. The round that is running keeps the config it started
 with, so a reload changes the next round.
@@ -202,6 +202,7 @@ With PlaceholderAPI installed, KingOfTheHill's own:
 |---|---|
 | `%koth_active%` | `true` while a round runs, otherwise `false` |
 | `%koth_holder%` | Name of the holder, empty if none |
+| `%koth_held_for%` | How long the holder has held the hill, such as `2m 5s`; empty if nobody holds it |
 | `%koth_waiting%` | `true` while a window is open but waiting for enough players, otherwise `false` |
 | `%koth_time_left%` | Time left in the round, or in the window while it waits; empty otherwise |
 | `%koth_next_start%` | When it next starts, empty if nothing is planned |

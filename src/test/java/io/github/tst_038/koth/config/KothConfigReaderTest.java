@@ -61,7 +61,7 @@ class KothConfigReaderTest {
         assertTrue(config.respawnHere());
         assertEquals(4, config.sidebar().inactive().size());
         assertEquals(4, config.sidebar().waiting().size());
-        assertEquals(2, config.sidebar().active().size());
+        assertEquals(5, config.sidebar().active().size());
     }
 
     @Test

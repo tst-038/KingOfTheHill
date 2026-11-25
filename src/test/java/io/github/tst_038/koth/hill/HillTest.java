@@ -66,6 +66,20 @@ class HillTest {
     }
 
     @Test
+    void theHoldTimeCountsFromTheCaptureAndStartsAgainOnALossOrDrop() {
+        ticks(3, A);
+        assertEquals(0, hill.heldSeconds());
+        ticks(4);
+        assertEquals(4, hill.heldSeconds());
+
+        ticks(3, B);
+        assertEquals(0, hill.heldSeconds());
+        ticks(2, B);
+        hill.drop();
+        assertEquals(0, hill.heldSeconds());
+    }
+
+    @Test
     void aFreeHillEarnsNothing() {
         assertEquals(HillTick.NOTHING, ticks(10));
     }

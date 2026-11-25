@@ -23,6 +23,10 @@ restriction:
   min-online: "only %online% of the %needed% players needed are online"
 placeholder:
   no-holder: "<gray>nobody"
+  # %held_for% while nobody holds the hill
+  not-held: "<gray>-"
+  # %balance% in the sidebar before the player's points are read
+  balance-loading: "<gray>…"
   never: "<gray>not planned"
 status:
   active: "%prefix%<green>Running. <white>Holder: <gold>%holder%</gold>, <white>%time_left%</white> left."

@@ -52,7 +52,8 @@ restrictions:
   # A forced start (/kotha start) ignores it.
   min-online: 3
 
-# The sidebar of players in the KOTH world. %holder%, %time_left%, %next_start%, %next_in% and %prefix% work here,
+# The sidebar of players in the KOTH world. %holder%, %held_for% (how long the holder has held the hill), %time_left%,
+# %next_start%, %next_in%, %balance% (the viewer's own points) and %prefix% work here,
 # and in waiting also %online% and %needed% (%time_left% is then the time left of the window). At most 15 lines each.
 sidebar:
   title: "<gold><bold>King of the Hill"
@@ -68,4 +69,7 @@ sidebar:
     - "<gray>Window ends in %time_left%"
   active:
     - "<white>Holder: <gold>%holder%"
+    - "<white>Held for: <yellow>%held_for%"
     - "<white>Time left: <yellow>%time_left%"
+    - ""
+    - "<white>Your points: <gold>%balance%"

@@ -28,12 +28,12 @@ class KothPlaceholdersTest {
     }
 
     private static KothStatus active() {
-        return new KothStatus(Optional.of(new Window(NOW.minusMinutes(5), NOW.plusMinutes(10))), Optional.empty(), Optional.of("Alice"), Optional.empty(), 0,
+        return new KothStatus(Optional.of(new Window(NOW.minusMinutes(5), NOW.plusMinutes(10))), Optional.empty(), Optional.of("Alice"), Optional.empty(), 0, 125,
                 Optional.of(NOW.plusHours(2)));
     }
 
     private static KothStatus idle() {
-        return new KothStatus(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 0, Optional.of(NOW.plusMinutes(90)));
+        return new KothStatus(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 0, 0, Optional.of(NOW.plusMinutes(90)));
     }
 
     @Test
@@ -42,6 +42,7 @@ class KothPlaceholdersTest {
 
         assertEquals("true", placeholders.resolve(Optional.empty(), "active"));
         assertEquals("Alice", placeholders.resolve(Optional.empty(), "holder"));
+        assertEquals("2m 5s", placeholders.resolve(Optional.empty(), "held_for"));
         assertEquals("10m", placeholders.resolve(Optional.empty(), "time_left"));
         assertEquals("Mon 22:00", placeholders.resolve(Optional.empty(), "next_start"));
         assertEquals("2h", placeholders.resolve(Optional.empty(), "next_in"));
@@ -53,6 +54,7 @@ class KothPlaceholdersTest {
 
         assertEquals("false", placeholders.resolve(Optional.empty(), "active"));
         assertEquals("", placeholders.resolve(Optional.empty(), "holder"));
+        assertEquals("", placeholders.resolve(Optional.empty(), "held_for"));
         assertEquals("", placeholders.resolve(Optional.empty(), "time_left"));
         assertEquals("Mon 21:30", placeholders.resolve(Optional.empty(), "next_start"));
         assertEquals("1h 30m", placeholders.resolve(Optional.empty(), "next_in"));
@@ -61,7 +63,7 @@ class KothPlaceholdersTest {
     private static KothStatus waiting() {
         var window = new Window(NOW.minusMinutes(5), NOW.plusMinutes(25));
         return new KothStatus(Optional.empty(), Optional.of(new ActivationEvent.Waiting(window, new Refusal("restriction.min-online", Map.of()))),
-                Optional.empty(), Optional.empty(), 0, Optional.of(NOW.plusHours(1)));
+                Optional.empty(), Optional.empty(), 0, 0, Optional.of(NOW.plusHours(1)));
     }
 
     @Test

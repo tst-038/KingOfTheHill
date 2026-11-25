@@ -29,7 +29,12 @@ public final class StatusResolver {
     public static TagResolver of(Messages messages, KothStatus status, LocalDateTime now) {
         var resolvers = new ArrayList<TagResolver>();
         KothPlaceholders.values(status, now).forEach((name, text) -> {
-            var fallback = name.equals("holder") ? "placeholder.no-holder" : name.equals("next_start") ? "placeholder.never" : null;
+            var fallback = switch (name) {
+                case "holder" -> "placeholder.no-holder";
+                case "held_for" -> "placeholder.not-held";
+                case "next_start" -> "placeholder.never";
+                default -> null;
+            };
             resolvers.add(text.isEmpty() && fallback != null ? Placeholder.component(name, messages.render(fallback)) : name.equals("holder") ? Placeholder.unparsed(name, text) : Placeholder.parsed(name, text));
         });
         return TagResolver.resolver(resolvers);

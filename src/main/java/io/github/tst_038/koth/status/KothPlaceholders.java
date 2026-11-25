@@ -13,7 +13,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * The values of KOTH for text: {@code holder}, {@code time_left}, {@code next_start} and {@code next_in}
+ * The values of KOTH for text: {@code holder}, {@code held_for}, {@code time_left}, {@code next_start} and {@code next_in}
  * for the sidebar and messages, and with {@code active}, {@code waiting} and {@code balance} for PlaceholderAPI.
  * {@code time_left} is the time left of the window while it waits for players too. A value with
  * nothing to say is empty. Safe to use from any thread.
@@ -48,6 +48,7 @@ public final class KothPlaceholders {
     public static Map<String, String> values(KothStatus status, LocalDateTime now) {
         return Map.of(
                 "holder", status.holderName().orElse(""),
+                "held_for", status.holderName().isPresent() ? Durations.format(Duration.ofSeconds(status.heldSeconds())) : "",
                 "time_left", status.running().or(() -> status.waiting().map(ActivationEvent.Waiting::window)).map(window -> Durations.format(window.left(now))).orElse(""),
                 "next_start", status.nextStart().map(Moments::format).orElse(""),
                 "next_in", status.nextStart().map(start -> Durations.format(Duration.between(now, start))).orElse(""));

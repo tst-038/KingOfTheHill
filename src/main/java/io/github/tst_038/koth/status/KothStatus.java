@@ -14,11 +14,12 @@ import java.util.UUID;
  * @param holderName who holds the hill; kept as a name for when they have left
  * @param taker who is taking the hill
  * @param progress the seconds the taker has stood on it alone so far
+ * @param heldSeconds how long the holder has held it; 0 while nobody does
  * @param nextStart when KOTH is next due to start
  */
 public record KothStatus(Optional<Window> running, Optional<ActivationEvent.Waiting> waiting, Optional<String> holderName, Optional<UUID> taker, int progress,
-        Optional<LocalDateTime> nextStart) {
+        long heldSeconds, Optional<LocalDateTime> nextStart) {
 
     /** Nothing running and nothing planned, as before the first config is read. */
-    public static final KothStatus OFF = new KothStatus(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 0, Optional.empty());
+    public static final KothStatus OFF = new KothStatus(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 0, 0, Optional.empty());
 }

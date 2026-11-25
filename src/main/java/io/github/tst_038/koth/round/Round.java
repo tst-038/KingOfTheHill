@@ -100,4 +100,8 @@ final class Round {
     int progress() {
         return hill.progress();
     }
+
+    long heldSeconds() {
+        return hill.heldSeconds();
+    }
 }

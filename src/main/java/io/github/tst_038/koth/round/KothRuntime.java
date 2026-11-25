@@ -114,7 +114,8 @@ public final class KothRuntime {
 
     private void publish(LocalDateTime now) {
         status = new KothStatus(activations.running(), activations.waiting(), Optional.ofNullable(round).flatMap(Round::holderName),
-                Optional.ofNullable(round).flatMap(Round::taker), round == null ? 0 : round.progress(), activations.nextStart(now));
+                Optional.ofNullable(round).flatMap(Round::taker), round == null ? 0 : round.progress(),
+                round == null ? 0 : round.heldSeconds(), activations.nextStart(now));
     }
 
     /** Staff start, for the given length or the timetable's. @return false if KOTH isn't set up or is already running */

@@ -105,7 +105,7 @@ public final class KothPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new RespawnListener(runtime::config), this);
         rewards = new RewardReader(savedItems);
         getServer().getOnlinePlayers().forEach(player -> wallet.load(player.getUniqueId()));
-        sidebar = new KothSidebar(this, boards, messages, players, clock);
+        sidebar = new KothSidebar(this, boards, messages, players, wallet.balances(), clock);
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             unregisterPlaceholders = KothExpansion.register(this, new KothPlaceholders(runtime::status, wallet.balances(), clock));
         }
