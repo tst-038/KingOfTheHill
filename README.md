@@ -57,7 +57,7 @@ Players who are in a MiniGami match can't join KOTH, shop or receive purchases; 
 | `point` | The hill's `region`, `capture-seconds` to take it, and optional `colour-blocks` that change colour on each capture |
 | `scoring` | `points` for the holder every `every-seconds`, wherever they are in the world |
 | `restrictions` | `min-online`: a window waits, with an announcement, while fewer players are online, and starts as soon as there are enough; one that ends first is skipped. A forced start ignores it |
-| `sidebar` | The title and lines shown to players in the KOTH world, for when it runs, when it waits for players and when it doesn't |
+| `sidebar` | The title and lines shown to players in the KOTH world, for when it runs, when it waits for players and when it doesn't. It goes through MiniGami's boards, so a match's sidebar comes first and players get their own board back on leaving the world |
 
 A holder who leaves the world or the server drops the hill. The round that is running keeps the config it started
 with, so a reload changes the next round.

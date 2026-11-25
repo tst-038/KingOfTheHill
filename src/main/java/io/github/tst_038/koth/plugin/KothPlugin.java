@@ -1,5 +1,6 @@
 package io.github.tst_038.koth.plugin;
 
+import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.message.Messages;
@@ -78,7 +79,8 @@ public final class KothPlugin extends JavaPlugin {
         savedItems = service(MiniGamiSavedItems.class);
         MiniGamiPlayers players = service(MiniGamiPlayers.class);
         MiniGamiSetup setup = service(MiniGamiSetup.class);
-        if (stats == null || savedItems == null || players == null || setup == null) {
+        MiniGamiBoards boards = service(MiniGamiBoards.class);
+        if (stats == null || savedItems == null || players == null || setup == null || boards == null) {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -103,7 +105,7 @@ public final class KothPlugin extends JavaPlugin {
         rewards = new RewardReader(savedItems);
         getServer().getPluginManager().registerEvents(new ShopListener(new Checkout(getServer(), messages, wallet, players, serverThread, getLogger())), this);
         getServer().getOnlinePlayers().forEach(player -> wallet.load(player.getUniqueId()));
-        sidebar = new KothSidebar(getServer(), messages, players, clock);
+        sidebar = new KothSidebar(this, boards, messages, players, clock);
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             unregisterPlaceholders = KothExpansion.register(this, new KothPlaceholders(runtime::status, wallet.balances(), clock));
         }

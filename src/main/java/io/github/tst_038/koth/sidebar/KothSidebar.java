@@ -1,5 +1,8 @@
 package io.github.tst_038.koth.sidebar;
 
+import io.github.tst_038.minigami.api.board.BoardClaim;
+import io.github.tst_038.minigami.api.board.BoardPriority;
+import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.koth.config.KothConfig;
@@ -17,31 +20,36 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Scoreboard;
 
 /**
  * The sidebar of the players in the KOTH world: that KOTH isn't running and when it next starts, that it waits for
- * players, or who holds the hill and how long is left. One board is shared by everyone. Each player's own board is remembered when they
- * get it and given back when they leave the world or the plugin stops; players MiniGami holds in a match keep
- * the match's board. Server thread only, driven once a second by {@link #update}.
+ * players, or who holds the hill and how long is left. One board is shared by everyone, shown through a claim on
+ * MiniGami's boards, which is released when the player leaves the world or the plugin stops, so they get back whatever
+ * board they should see. Players MiniGami holds in a match keep the match's board. Server thread only, driven once a
+ * second by {@link #update}.
  */
 public final class KothSidebar {
 
     private static final String OBJECTIVE = "koth";
 
+    private final Plugin plugin;
     private final Server server;
+    private final MiniGamiBoards boards;
     private final Messages messages;
     private final MiniGamiPlayers players;
     private final Clock clock;
-    /** What each player with our board had before it. */
-    private final Map<UUID, Scoreboard> remembered = new HashMap<>();
+    private final Map<UUID, BoardClaim> claims = new HashMap<>();
     private Scoreboard board;
     private int lineCount = -1;
 
-    public KothSidebar(Server server, Messages messages, MiniGamiPlayers players, Clock clock) {
-        this.server = server;
+    public KothSidebar(Plugin plugin, MiniGamiBoards boards, Messages messages, MiniGamiPlayers players, Clock clock) {
+        this.plugin = plugin;
+        this.server = plugin.getServer();
+        this.boards = boards;
         this.messages = messages;
         this.players = players;
         this.clock = clock;
@@ -63,16 +71,17 @@ public final class KothSidebar {
             if (player.getWorld().equals(world) && !players.isInMatch(player.getUniqueId())) {
                 give(player);
             } else {
-                giveBack(player);
+                release(player.getUniqueId());
             }
         }
-        remembered.keySet().removeIf(id -> server.getPlayer(id) == null);
+        // MiniGami dropped the claims of those who quit.
+        claims.keySet().removeIf(id -> server.getPlayer(id) == null);
     }
 
-    /** Gives everyone their own board back. */
+    /** Releases every claim, so everyone gets back the board they should see. */
     public void shutdown() {
-        server.getOnlinePlayers().forEach(this::giveBack);
-        remembered.clear();
+        claims.values().forEach(BoardClaim::release);
+        claims.clear();
     }
 
     private void draw(Component title, List<Component> lines) {
@@ -98,17 +107,18 @@ public final class KothSidebar {
         }
     }
 
+    /** Claims the player's scoreboard, again if the claim was dropped. */
     private void give(Player player) {
-        if (player.getScoreboard() != board) {
-            remembered.put(player.getUniqueId(), player.getScoreboard());
-            player.setScoreboard(board);
+        var claim = claims.get(player.getUniqueId());
+        if (claim == null || !claim.isActive()) {
+            claims.put(player.getUniqueId(), boards.claim(plugin, player, board, BoardPriority.PLUGIN));
         }
     }
 
-    private void giveBack(Player player) {
-        if (board != null && player.getScoreboard() == board) {
-            var before = remembered.remove(player.getUniqueId());
-            player.setScoreboard(before != null ? before : server.getScoreboardManager().getMainScoreboard());
+    private void release(UUID id) {
+        var claim = claims.remove(id);
+        if (claim != null) {
+            claim.release();
         }
     }
 }
