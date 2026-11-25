@@ -67,3 +67,22 @@ admin:
   storage-failed: "%prefix%<red>The points storage failed; see the log."
   # The status lines: %state%, %holder%, %taker%, %progress%, %capture%, %next_start%, %online%, %config%, %shop%
   status: "%prefix%<gray>%state% <dark_gray>|</dark_gray> holder %holder% <dark_gray>|</dark_gray> taking: %taker% %progress%/%capture%s <dark_gray>|</dark_gray> next %next_start% <dark_gray>|</dark_gray> online %online% <dark_gray>|</dark_gray> config %config%, shop %shop%"
+# /kotha setup. %box% is one of point and colours below.
+setup:
+  point: "the hill"
+  colours: "the colour box"
+  no-worldedit: "%prefix%<red>That needs WorldEdit or FastAsyncWorldEdit."
+  no-selection: "%prefix%<red>Select the box with WorldEdit first."
+  # %world%: the KOTH world
+  wrong-world: "%prefix%<red>Do that in the KOTH world, <white>%world%</white>."
+  not-loaded: "%prefix%<red>config.yml isn't in use, so there is nothing to select or show; see /kotha reload."
+  no-box: "%prefix%<red>config.yml has no %box%."
+  box-set: "%prefix%<green>Saved %box% in config.yml."
+  box-selected: "%prefix%<green>Selected %box% with WorldEdit."
+  # %seconds%
+  box-showing: "%prefix%<gray>Showing %box% for %seconds% seconds."
+  spawn-set: "%prefix%<green>Saved the spawn where you stand in config.yml."
+# Changing a file by command. %file%
+edit:
+  not-saved: "%prefix%<red>%file% was left as it was; it would have these problems:"
+  failed: "%prefix%<red>Could not write %file%; see the log."

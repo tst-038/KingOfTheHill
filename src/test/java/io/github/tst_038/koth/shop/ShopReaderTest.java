@@ -10,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,12 @@ class ShopReaderTest {
                 rewards: %s
             """;
 
-    private final MiniGamiSavedItems saved = new MiniGamiSavedItems() {
+    private final MiniGamiSavedItems saved = new SavedNames(Set.of("koth-crate-key"));
+    private final RewardReader rewards = new RewardReader(new SavedNames(Set.of()));
+
+    /** Reading only asks whether an item exists; making an item needs a server. */
+    private record SavedNames(Set<String> names) implements MiniGamiSavedItems {
+
         @Override
         public Optional<ItemStack> find(String name) {
             return Optional.empty();
@@ -35,10 +42,14 @@ class ShopReaderTest {
 
         @Override
         public boolean has(String name) {
-            return name.equals("koth-crate-key");
+            return names.contains(name);
         }
-    };
-    private final RewardReader rewards = new RewardReader(name -> Optional.empty());
+
+        @Override
+        public CompletableFuture<Void> save(String name, ItemStack item) {
+            throw new UnsupportedOperationException();
+        }
+    }
 
     private ShopReader.Loaded load(String yaml) {
         return ShopReader.load(yaml, rewards, saved);

@@ -5,6 +5,7 @@ import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import java.util.List;
 import java.util.Optional;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -26,6 +27,11 @@ public final class KothConfigLoader {
         } catch (InvalidConfigurationException e) {
             return new Loaded(Optional.empty(), List.of(new ConfigProblem(KothFiles.CONFIG, "", "can't be read: " + e.getMessage())));
         }
+        return load(section, worlds);
+    }
+
+    /** The file already read. Looks up the world, so run it on the server thread unless the lookup needs no server. */
+    public static Loaded load(ConfigurationSection section, WorldLookup worlds) {
         try {
             return new Loaded(Optional.of(KothConfigReader.read(ConfigReader.of(KothFiles.CONFIG, section), worlds)), List.of());
         } catch (InvalidConfigException e) {

@@ -5,11 +5,13 @@ import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.reward.RewardReader;
+import io.github.tst_038.minigami.api.setup.MiniGamiSetup;
 import io.github.tst_038.minigami.api.stat.MiniGamiStats;
 import io.github.tst_038.minigami.core.storage.Migrations;
 import io.github.tst_038.minigami.core.storage.SqliteStorage;
 import io.github.tst_038.minigami.core.storage.Storage;
 import io.github.tst_038.koth.command.KothCommands;
+import io.github.tst_038.koth.config.FileEdits;
 import io.github.tst_038.koth.config.KothConfigLoader;
 import io.github.tst_038.koth.config.KothFiles;
 import io.github.tst_038.koth.ledger.Balances;
@@ -20,6 +22,7 @@ import io.github.tst_038.koth.placeholder.KothExpansion;
 import io.github.tst_038.koth.round.Joining;
 import io.github.tst_038.koth.round.KothRuntime;
 import io.github.tst_038.koth.schedule.HandledWindows;
+import io.github.tst_038.koth.setup.KothSetup;
 import io.github.tst_038.koth.sidebar.KothSidebar;
 import io.github.tst_038.koth.shop.Checkout;
 import io.github.tst_038.koth.shop.Shop;
@@ -40,6 +43,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.random.RandomGenerator;
 import net.kyori.adventure.audience.Audience;
@@ -72,7 +76,8 @@ public final class KothPlugin extends JavaPlugin {
         MiniGamiStats stats = service(MiniGamiStats.class);
         savedItems = service(MiniGamiSavedItems.class);
         MiniGamiPlayers players = service(MiniGamiPlayers.class);
-        if (stats == null || savedItems == null || players == null) {
+        MiniGamiSetup setup = service(MiniGamiSetup.class);
+        if (stats == null || savedItems == null || players == null || setup == null) {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -105,7 +110,11 @@ public final class KothPlugin extends JavaPlugin {
             runtime.second();
             sidebar.update(runtime.config(), runtime.status());
         }, 20, 20);
-        var commands = new KothCommands(getServer(), messages, runtime, joining, wallet, players, this::shop, savedItems, requester -> loadConfig(files, messages, requester), clock, serverThread, getLogger());
+        Consumer<Audience> reload = requester -> loadConfig(files, messages, requester);
+        Executor fileIo = task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run());
+        var edits = new FileEdits(getDataPath(), messages, fileIo, serverThread, reload, getLogger());
+        var commands = new KothCommands(getServer(), messages, runtime, joining, wallet, players, this::shop, savedItems, reload,
+                new KothSetup(setup, edits, messages, runtime::config), clock, serverThread, getLogger());
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(commands.playerRoot(), "King of the Hill: status, shop, points and going there");
             event.registrar().register(commands.adminRoot(), "Manage King of the Hill");

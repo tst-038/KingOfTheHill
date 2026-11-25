@@ -4,6 +4,7 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
@@ -14,6 +15,8 @@ import io.github.tst_038.koth.ledger.Wallet;
 import io.github.tst_038.koth.message.StatusResolver;
 import io.github.tst_038.koth.round.Joining;
 import io.github.tst_038.koth.round.KothRuntime;
+import io.github.tst_038.koth.setup.KothSetup;
+import io.github.tst_038.koth.setup.KothSetup.Box;
 import io.github.tst_038.koth.shop.Shop;
 import io.github.tst_038.koth.shop.ShopMenu;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -39,7 +42,7 @@ import org.bukkit.entity.Player;
 
 /**
  * {@code /koth [shop|balance|join]} for players, and {@code /kotha reload|start [minutes]|stop|status|points give|take|show <player> [amount]}
- * for staff. Server thread only.
+ * and {@code /kotha setup point|colours set|select|show} and {@code /kotha setup spawn} for staff. Server thread only.
  */
 public final class KothCommands {
 
@@ -64,12 +67,13 @@ public final class KothCommands {
     private final Supplier<Shop> shop;
     private final MiniGamiSavedItems savedItems;
     private final Consumer<Audience> reload;
+    private final KothSetup setup;
     private final Clock clock;
     private final Executor serverThread;
     private final Logger logger;
 
     public KothCommands(Server server, Messages messages, KothRuntime runtime, Joining joining, Wallet wallet, MiniGamiPlayers players, Supplier<Shop> shop,
-            MiniGamiSavedItems savedItems, Consumer<Audience> reload, Clock clock, Executor serverThread, Logger logger) {
+            MiniGamiSavedItems savedItems, Consumer<Audience> reload, KothSetup setup, Clock clock, Executor serverThread, Logger logger) {
         this.server = server;
         this.messages = messages;
         this.runtime = runtime;
@@ -79,6 +83,7 @@ public final class KothCommands {
         this.shop = shop;
         this.savedItems = savedItems;
         this.reload = reload;
+        this.setup = setup;
         this.clock = clock;
         this.serverThread = serverThread;
         this.logger = logger;
@@ -111,6 +116,10 @@ public final class KothCommands {
                         .then(Commands.literal("show").then(target().executes(context -> points(context, Points.SHOW, 0))))
                         .then(Commands.literal("give").then(target().then(amount().executes(context -> points(context, Points.GIVE, amountOf(context))))))
                         .then(Commands.literal("take").then(target().then(amount().executes(context -> points(context, Points.TAKE, amountOf(context)))))))
+                .then(Commands.literal("setup").requires(KothCommands::isPlayer)
+                        .then(box("point", Box.POINT))
+                        .then(box("colours", Box.COLOURS))
+                        .then(Commands.literal("spawn").executes(byPlayer(setup::spawn))))
                 .build();
     }
 
@@ -214,6 +223,13 @@ public final class KothCommands {
     }
 
     // Nodes.
+
+    private LiteralArgumentBuilder<CommandSourceStack> box(String name, Box box) {
+        return Commands.literal(name)
+                .then(Commands.literal("set").executes(byPlayer(player -> setup.set(player, box))))
+                .then(Commands.literal("select").executes(byPlayer(player -> setup.select(player, box))))
+                .then(Commands.literal("show").executes(byPlayer(player -> setup.show(player, box))));
+    }
 
     private RequiredArgumentBuilder<CommandSourceStack, String> target() {
         return Commands.argument("player", StringArgumentType.word()).suggests((context, builder) -> {

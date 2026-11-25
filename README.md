@@ -27,6 +27,7 @@ MiniGami's stats, leaderboards and placeholders under the game `koth`.
 | Server | Paper **26.3**, Java **25** |
 | Required | MiniGami **1.6** or later, which KingOfTheHill loads after and uses for stats, saved items and to know who is in a match |
 | Optional | [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/), for `%koth_...%` |
+| Optional | [WorldEdit](https://enginehub.org/worldedit) or [FastAsyncWorldEdit](https://www.spigotmc.org/resources/fastasyncworldedit.13932/), to set the hill and the colour box by command |
 
 1. Put `MiniGami-<version>.jar` and `KingOfTheHill-<version>.jar` in `plugins/`.
 2. Start the server. KingOfTheHill creates `plugins/KingOfTheHill/` with `config.yml`, `shop.yml` and `messages/en.yml`.
@@ -38,9 +39,13 @@ Players who are in a MiniGami match can't join KOTH, shop or receive purchases; 
 
 1. Have a world folder for KOTH, for example `koth`, next to your other worlds. KingOfTheHill loads it if it isn't
    loaded already. It never generates a world: a name with no folder is reported as a problem.
-2. In `config.yml`, set `world.name`, the `spawn` where `/koth join` puts players, and the `point.region` of the hill.
-3. Run `/kotha reload`. Problems are listed in chat and in the log. A file with problems isn't used, and the previous
-   one stays in use.
+2. In `config.yml`, set `world.name` and run `/kotha reload`. Problems are listed in chat and in the log. A file with
+   problems isn't used, and the previous one stays in use.
+3. In the KOTH world, select the hill with WorldEdit and run `/kotha setup point set`; likewise `/kotha setup colours set`
+   for the blocks that change colour, if you want them. Stand where `/koth join` should put players and run
+   `/kotha setup spawn`. Each command writes `config.yml`, keeping its comments, and reloads. A change that would give
+   the file problems, such as a hill that is too big, isn't written. You can also set `point.region`,
+   `point.colour-blocks` and `world.spawn` in the file by hand and run `/kotha reload`.
 4. Try it with `/kotha start 5` (a five minute round, whatever the timetable and restrictions say), and `/kotha stop`.
 
 ## config.yml
@@ -148,15 +153,19 @@ For staff, with `koth.admin`:
 | `/kotha points show <player>` | A player's points |
 | `/kotha points give <player> <amount>` | Give points |
 | `/kotha points take <player> <amount>` | Take points, down to zero at the lowest |
+| `/kotha setup point set\|select\|show` | Set the hill to your WorldEdit selection, select it with WorldEdit, or outline it in particles for a few seconds |
+| `/kotha setup colours set\|select\|show` | The same for the box of blocks that change colour |
+| `/kotha setup spawn` | Set the spawn of `/koth join` to where you stand |
 
-The player must have been on the server before; names are looked up from the server's user cache.
+For `points`, the player must have been on the server before; names are looked up from the server's user cache.
+`setup` is done in the KOTH world, and `set` and `select` need WorldEdit or FastAsyncWorldEdit.
 
 ## Permissions
 
 | Permission | Default | |
 |---|---|---|
 | `koth.play` | everyone | `/koth`, the shop, your points and going to the KOTH world |
-| `koth.admin` | op | `/kotha`: reload, start and stop, and giving and taking points |
+| `koth.admin` | op | `/kotha`: reload, start and stop, giving and taking points, and setting up |
 
 ## Placeholders
 
